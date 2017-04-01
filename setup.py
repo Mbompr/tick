@@ -6,13 +6,21 @@
 """
 setup.py file
 """
-
+import multiprocessing
 import os
+import re
 import sys
 import sysconfig
 import platform
+import unittest
+import warnings
+import pathlib
+import subprocess
+import shutil
+import distutils.util
+
 from distutils.command.build import build
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup, Command
 from setuptools.extension import Extension
 from setuptools.command.install import install
 
@@ -36,6 +44,17 @@ from scipy.sparse import csr_matrix
 
 
 debug_flags = ['DEBUG_COSTLY_THROW']
+
+version_info = sys.version_info
+
+python_min_ver = (3, 4, 0)
+python_ver = (version_info.major, version_info.minor, version_info.micro)
+
+if python_ver < python_min_ver:
+    txt = 'Python version {0}.{1}.{2} ' \
+          'lower than the required version >= {3}.{4}.{5}.'
+
+    warnings.warn(txt.format(*(python_ver + python_min_ver)))
 
 # We need to understand what kind of ints are used by the sparse matrices of
 # scipy
@@ -78,6 +97,13 @@ except AttributeError:
 # Determine if we have an available BLAS implementation
 blas_info = get_info("blas_opt", 0)
 
+# Directory containing built .so files before they are moved either
+# in source (with build flag --inplace) or to site-packages (by install)
+#
+# E.g. build/lib.macosx-10.11-x86_64-3.4
+build_dir = "build/lib.{}-{}".format(distutils.util.get_platform(),
+                                     sys.version[0:3])
+
 
 class SwigExtension(Extension):
     """This only adds information about extension construction, useful for
@@ -112,19 +138,12 @@ class SwigPath:
         self.private_extension_name = '_' + extension_name
 
         # Transform folder path to module path
-        self.extension_path = self.build\
-                                  .replace('.', '')\
-                                  .replace('/', '.')\
-                            + '.' + self.private_extension_name
+        self.extension_path = self.build \
+                                  .replace('.', '') \
+                                  .replace('/', '.') \
+                              + '.' + self.private_extension_name
 
         self._check_configuration()
-
-        # Directory containing built .so files before they are moved either
-        # in source (with build flag --inplace) or to site-packages (by install)
-        #
-        # E.g. build/lib.macosx-10.11-x86_64-3.4
-        self.build_dir = "build/lib.{}-{}.{}".format(sysconfig.get_platform(),
-                                                     *sys.version_info[:2])
 
         # Filename of the produced .so file (e.g. _array.so)
         self.lib_filename = '{}{}'.format(self.private_extension_name,
@@ -259,7 +278,7 @@ def create_extension(extension_name, module_dir,
             opts.extend(["-I%s/" % mod.src, "-I%s/" % mod.swig])
 
         # Add compile-time location of the dependency library
-        library_dirs.append(os.path.join(mod.build_dir, mod.build))
+        library_dirs.append(os.path.join(build_dir, mod.build))
 
         # Because setuptools produces shared object files with non-standard
         # names (i.e. not lib<name>.so) we prepend with colon to specify the
@@ -519,7 +538,32 @@ inference_extension = create_extension(**inference_extension_info)
 
 
 class CustomBuild(build):
+    swig_min_ver = (3, 0, 7)
+
+    @staticmethod
+    def extract_swig_version(swig_ver_str):
+        m = re.search('SWIG Version (\d+).(\d+).(\d+)', swig_ver_str)
+
+        if not m:
+            txt = 'Could not extract SWIG version from string: {0}'
+
+            warnings.warn(txt.format(swig_ver_str))
+
+            return 0, 0, 0
+
+        return tuple(int(x) for x in m.groups()[0:3])
+
     def run(self):
+        swig_ver = self.extract_swig_version(
+            str(subprocess.check_output(['swig', '-version'])))
+
+        if swig_ver < self.swig_min_ver:
+            txt = 'SWIG version {0}.{1}.{2} ' \
+                  'lower than the required version >= {3}.{4}.{5}. ' \
+                  'This will likely cause build errors!'
+
+            warnings.warn(txt.format(*(swig_ver + self.swig_min_ver)))
+
         self.run_command('build_ext')
         build.run(self)
 
@@ -528,6 +572,153 @@ class CustomInstall(install):
     def run(self):
         self.run_command('build_ext')
         self.do_egg_install()
+
+
+class TickCommand(Command):
+    tick_dir = os.path.abspath(os.path.join(os.curdir, 'tick'))
+    build_dir = os.path.abspath(os.path.join(build_dir, 'cpptest'))
+
+    user_options = []
+
+    def initialize_options(self):
+        """Set default values for options."""
+        pass
+
+    def finalize_options(self):
+        """Post-process options."""
+        pass
+
+
+class RunCPPTests(TickCommand):
+    description = 'run tick C++ tests'
+
+    def run(self):
+        self.run_command('makecpptest')
+
+        make_cmd = ['make', 'check']
+        subprocess.check_call(make_cmd, cwd=self.build_dir)
+
+
+class BuildCPPTests(TickCommand):
+    build_jobs = 1
+    description = 'build tick C++ tests'
+    user_options = [
+        ('build-jobs=', 'j',
+         'number of parallel build jobs (default is number of available CPU '
+         'cores reported by Python)'),
+    ]
+
+    def initialize_options(self):
+        """Set default values for options."""
+        self.build_jobs = multiprocessing.cpu_count()
+
+    def run(self):
+        relpath = os.path.relpath(self.tick_dir, self.build_dir)
+        cmake_cmd = ['cmake',
+                     '-DCMAKE_BUILD_TYPE=Release',
+                     relpath]
+
+        os.makedirs(os.path.join(self.build_dir, 'cpptest'), exist_ok=True)
+
+        subprocess.check_call(['git', 'submodule', 'update', '--init'],
+                              cwd=os.path.curdir)
+
+        subprocess.check_call(cmake_cmd, cwd=self.build_dir)
+
+        make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs)]
+        subprocess.check_call(make_cmd, cwd=self.build_dir)
+
+
+class RunCPPLint(TickCommand):
+    description = 'run cpplint on tick C++ source files'
+
+    CPPLINT_DIRS = [
+        'tick/base/array/src',
+        'tick/base/array/tests/src',
+        'tick/base/array_test/src',
+        'tick/base/src',
+        'tick/base/src/math',
+        'tick/base/src/parallel',
+        'tick/inference/src',
+        'tick/optim/model/src',
+        'tick/optim/solver/src',
+        'tick/optim/prox/src',
+        'tick/random/src',
+        'tick/simulation/src',
+    ]
+
+    def run(self):
+        try:
+            import cpplint as cl
+
+            cl_state = cl._cpplint_state
+            error_count = 0
+
+            for dir in self.CPPLINT_DIRS:
+                print("Processing {}".format(dir))
+
+                cl_state.ResetErrorCounts()
+                filenames = list(pathlib.Path(dir).glob('**/*.h')) + \
+                            list(pathlib.Path(dir).glob('**/*.cpp'))
+
+                for filename in filenames:
+                    cl.ProcessFile(str(filename), cl_state.verbose_level)
+                cl_state.PrintErrorCounts()
+
+                error_count += cl_state.error_count
+                print('')
+
+            if error_count > 0:
+                raise RuntimeError("Codestyle check by cpplint failed")
+
+        except ImportError:
+            warnings.warn("Stylecheck by cpplint failed because cpplint "
+                          "is not installed as a Python module")
+
+
+class RunPyTests(TickCommand):
+    description = 'run tick Python tests'
+    start_dir = '.'
+
+    user_options = [
+        ('start-dir=', 's',
+         'directory to start looking for Python tests (e.g. tick/simulation)'),
+    ]
+
+    def initialize_options(self):
+        """Set default values for options."""
+        self.start_dir = '.'
+
+    def run(self):
+        loader = unittest.TestLoader()
+        alltests = loader.discover(self.start_dir, pattern="*_test.py")
+
+        unittest.TextTestRunner(verbosity=2).run(alltests)
+
+
+class CleanTick(TickCommand):
+    description = 'cleans all generated and built files'
+
+    def run(self):
+        self.run_command('clean')
+
+        shutil.rmtree(build_dir)
+
+        patterns = [
+            '**/*.so',
+            '**/*_wrap.cpp',
+            '**/__pycache__/*.pyc',
+            '**/__pycache__',
+        ]
+
+        for paths in (pathlib.Path(os.curdir).glob(p) for p in patterns):
+            for path in paths:
+                print("Deleting {}".format(path))
+
+                if path.is_dir():
+                    path.rmdir()
+                else:
+                    path.unlink()
 
 
 setup(name="tick",
@@ -554,7 +745,13 @@ setup(name="tick",
                         'sphinx',
                         'pandas'],
       packages=find_packages(),
-      cmdclass={'build': CustomBuild, 'install': CustomInstall},
+      cmdclass={'build': CustomBuild,
+                'install': CustomInstall,
+                'makecpptest': BuildCPPTests,
+                'cpptest': RunCPPTests,
+                'cpplint': RunCPPLint,
+                'pytest': RunPyTests,
+                'cleantick': CleanTick},
       classifiers=['Development Status :: 3 - Alpha',
                    'Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',
@@ -570,5 +767,3 @@ setup(name="tick",
                    'Programming Language :: Python :: 3.6',
                    'License :: OSI Approved :: BSD License'],
       )
-
-
