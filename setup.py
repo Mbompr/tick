@@ -56,6 +56,11 @@ if python_ver < python_min_ver:
 
     warnings.warn(txt.format(*(python_ver + python_min_ver)))
 
+if sys.platform == 'darwin':
+    from distutils import sysconfig
+    vars = sysconfig.get_config_vars()
+    vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-dynamiclib')
+
 # We need to understand what kind of ints are used by the sparse matrices of
 # scipy
 sparsearray = csr_matrix(
@@ -86,6 +91,7 @@ if os.name == 'posix':
 
 # How do we create shared libs? Dynamic or bundle?
 create_bundle = 'bundle' in sysconfig.get_config_var("LDCXXSHARED")
+create_bundle = False
 
 # Obtain the numpy include directory.
 # This logic works across numpy versions.
@@ -296,6 +302,8 @@ def create_extension(extension_name, module_dir,
         # the filename is used to resolve the library location at runtime
         # (together with rpath)
         extra_link_args.append('-Wl,-soname,%s' % swig_path.lib_filename)
+    else:
+        extra_link_args.append('-dynamiclib')
 
     for df in debug_flags:
         full_flag = "-D" + df
@@ -311,7 +319,9 @@ def create_extension(extension_name, module_dir,
     # Adding numpy include directory
     extra_include_dirs.append(numpy_include)
 
-    if create_bundle:
+    print(create_bundle)
+
+    if create_bundle or True:
         core_module = SwigExtension(extension_path, module_ref=swig_path,
                                     sources=swig_files + cpp_files,
                                     extra_compile_args=extra_compile_args,
@@ -576,7 +586,7 @@ class CustomInstall(install):
 
 class TickCommand(Command):
     tick_dir = os.path.abspath(os.path.join(os.curdir, 'tick'))
-    build_dir = os.path.abspath(os.path.join(build_dir, 'cpptest'))
+    cpp_build_dir = os.path.abspath(os.path.join(build_dir, 'cpptest'))
 
     user_options = []
 
@@ -589,14 +599,20 @@ class TickCommand(Command):
         pass
 
 
+class BuildRunCPPTests(TickCommand):
+    description = 'build and run tick C++ tests'
+
+    def run(self):
+        self.run_command('makecpptest')
+        self.run_command('runcpptest')
+
+
 class RunCPPTests(TickCommand):
     description = 'run tick C++ tests'
 
     def run(self):
-        self.run_command('makecpptest')
-
         make_cmd = ['make', 'check']
-        subprocess.check_call(make_cmd, cwd=self.build_dir)
+        subprocess.check_call(make_cmd, cwd=self.cpp_build_dir)
 
 
 class BuildCPPTests(TickCommand):
@@ -613,20 +629,19 @@ class BuildCPPTests(TickCommand):
         self.build_jobs = multiprocessing.cpu_count()
 
     def run(self):
-        relpath = os.path.relpath(self.tick_dir, self.build_dir)
+        relpath = os.path.relpath(self.tick_dir, self.cpp_build_dir)
         cmake_cmd = ['cmake',
                      '-DCMAKE_BUILD_TYPE=Release',
                      relpath]
 
         os.makedirs(os.path.join(self.build_dir, 'cpptest'), exist_ok=True)
 
-        subprocess.check_call(['git', 'submodule', 'update', '--init'],
-                              cwd=os.path.curdir)
-
         subprocess.check_call(cmake_cmd, cwd=self.build_dir)
 
-        make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs)]
-        subprocess.check_call(make_cmd, cwd=self.build_dir)
+        make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs), "VERBOSE=TRUE"]
+        make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs),
+                    ]
+        subprocess.check_call(make_cmd, cwd=self.cpp_build_dir)
 
 
 class RunCPPLint(TickCommand):
@@ -676,6 +691,11 @@ class RunCPPLint(TickCommand):
                           "is not installed as a Python module")
 
 
+class RunPyLint(TickCommand):
+    description = 'run tick PyLint codestyle check'
+    start_dir = '.'
+
+
 class RunPyTests(TickCommand):
     description = 'run tick Python tests'
     start_dir = '.'
@@ -694,6 +714,14 @@ class RunPyTests(TickCommand):
         alltests = loader.discover(self.start_dir, pattern="*_test.py")
 
         unittest.TextTestRunner(verbosity=2).run(alltests)
+
+
+class RunTestSuites(TickCommand):
+    description = 'run tick Python and C++ tests'
+
+    def run(self):
+        self.run_command('cpptest')
+        self.run_command('pytest')
 
 
 class CleanTick(TickCommand):
@@ -748,9 +776,12 @@ setup(name="tick",
       cmdclass={'build': CustomBuild,
                 'install': CustomInstall,
                 'makecpptest': BuildCPPTests,
-                'cpptest': RunCPPTests,
+                'runcpptest': RunCPPTests,
+                'cpptest': BuildRunCPPTests,
                 'cpplint': RunCPPLint,
                 'pytest': RunPyTests,
+                'pylint': RunPyLint,
+                'test': RunTestSuites,
                 'cleantick': CleanTick},
       classifiers=['Development Status :: 3 - Alpha',
                    'Intended Audience :: Science/Research',

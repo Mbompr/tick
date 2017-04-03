@@ -36,7 +36,10 @@ install:
   - python -m pip install cpplint
 
 script:
-  - python setup.py build_ext --inplace cpptest pytest cpplint
+  - python setup.py build_ext --inplace
+  - python setup.py cpptest
+  - python setup.py pytest
+  - python setup.py cpplint
   - export PYTHONPATH=${PYTHONPATH}:${TRAVIS_BUILD_DIR} && (cd DOC && make doctest)
 
 notifications:

@@ -90,6 +90,37 @@ If you use _tick_ in a scientific publication, we would appreciate citations.
 
 We welcome developers and researchers to contribute to the _tick_ package. In order to do so, we ask that you submit pull requests that will be reviewed by the _tick_ team before being merged into the package source.
 
+### Running unittests
+
+The _tick_ module has two independent test suites. One suite tests the module via the Python interface, while the other tests the C++ extension backend.
+
+To test the Python interface we use the [Python unittest](https://docs.python.org/3/library/unittest.html) module. To run all available tests:
+
+    python setup.py pytest
+
+Similarly, to run C++ tests:
+
+    python setup.py cpptest
+
+Our C++ test suite uses [gtest](https://github.com/google/googletest), and is built using CMake. You can install the necessary tools by running (CMake and a C++ compiler must be available):
+
+    # Install gtest
+    git clone https://github.com/google/googletest.git
+    (cd googletest && mkdir -p build && cd build && cmake .. && make && make install)
+
+### Code Standard
+
+To ensure a base level of code quality, we ask developers to conform to some codestyle standards.
+All Python code must follow the PEP8 code standard. The setup script can check this:
+
+    python setup.py pylint
+
+For C++ code, developers must follow the ([Google style guide](https://google.github.io/styleguide/cppguide.html)). To run a full check of all C++ code:
+
+    python setup.py cpplint
+
+This tool will report all codestyle issues within the C++ codebase. The Python module [cpplint](https://pypi.python.org/pypi/cpplint) must be installed beforehand.
+
 ### Pull Requests
 
 We ask that pull requests meet the following standards:
@@ -99,18 +130,8 @@ We ask that pull requests meet the following standards:
 - C++ code follows our style guide ([Google style](https://google.github.io/styleguide/cppguide.html))
 - If new functionality is added, new unit tests must be included in the pull request
 
-To ease this process, there is a script that automatically compiles and run all the necessary checks:
+To ease this process, the setup script can run all checks in a single run:
 
-    ./build_test.sh
-
-This command needs to be run from the package root directory.
-To run all checks, [Python unittest](https://docs.python.org/3/library/unittest.html), [gtest](https://github.com/google/googletest) and [cpplint](https://pypi.python.org/pypi/cpplint) needs to be available. On most systems, this will suffice:
-
-    # Install cpplint
-    pip install cpplint
-
-    # Install gtest
-    git clone https://github.com/google/googletest.git
-    (cd googletest && mkdir -p build && cd build && cmake .. && make && make install)
+    python setup.py cpplint cpptest pylint build_ext --inplace pytest
 
 Our continuous integration tool (Travis CI) will also run these checks upon submission of a pull request.
