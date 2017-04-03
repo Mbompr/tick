@@ -3,4 +3,4 @@
 ## Using the python executable defined in env. variable TICK_PYTHON otherwise fall back to "python"
 PYTHON_EXEC=${TICK_PYTHON:=python}
 
-${PYTHON_EXEC} setup.py cleantick
+${PYTHON_EXEC} setup.py clean

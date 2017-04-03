@@ -31,7 +31,7 @@ If not, you can install all of these dependencies easily using:
 
     pip install -r requirements.txt
 
-### Source installations
+### Source Installations
 
 For source installations, a C++ compiler capable of compiling C++11 source code (such as recent versions of [gcc](https://gcc.gnu.org/) or [clang](https://clang.llvm.org/)) must be available.
 In addition, SWIG version 3.07 or newer must also be available.
@@ -90,7 +90,7 @@ If you use _tick_ in a scientific publication, we would appreciate citations.
 
 We welcome developers and researchers to contribute to the _tick_ package. In order to do so, we ask that you submit pull requests that will be reviewed by the _tick_ team before being merged into the package source.
 
-### Running unittests
+### Running Unittests
 
 The _tick_ module has two independent test suites. One suite tests the module via the Python interface, while the other tests the C++ extension backend.
 

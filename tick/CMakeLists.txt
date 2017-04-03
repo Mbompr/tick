@@ -36,14 +36,22 @@ if (${GTEST_FOUND})
     enable_testing()
     message(STATUS "Testing in C++ enabled")
 
-    find_package (Threads REQUIRED)
+    set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6)
+
+    find_package(Threads REQUIRED)
+    find_package(PythonLibs 3 REQUIRED)
 
     include_directories(${GTEST_INCLUDE_DIRS})
+
+    set(TICK_TEST_LIBS
+        ${PYTHON_LIBRARIES}
+        ${GTEST_BOTH_LIBRARIES}
+        ${CMAKE_THREAD_LIBS_INIT})
 
     if(APPLE)
         find_library(ACCELERATE_LIBRARY Accelerate)
         mark_as_advanced(ACCELERATE_LIBRARY)
-        set(EXTRA_TEST_LIBS ${ACCELERATE_LIBRARY})
+        set(TICK_TEST_LIBS ${TICK_TEST_LIBS} ${ACCELERATE_LIBRARY})
     endif(APPLE)
 
     add_subdirectory(base/tests/src)

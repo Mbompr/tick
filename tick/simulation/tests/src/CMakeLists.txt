@@ -6,5 +6,9 @@ add_executable(tick_test_hawkes
         hawkes_kernel_sumexp_gtest.cpp
         )
 
-target_link_libraries(tick_test_hawkes ${GTEST_BOTH_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}
-        ${EXTRA_TEST_LIBS} base simulation)
+target_link_libraries(tick_test_hawkes
+    ${TICK_TEST_LIBS}
+    ${PROJECT_BINARY_DIR}/../${TICKLIB_ARRAY}
+    ${PROJECT_BINARY_DIR}/../${TICKLIB_BASE}
+    ${PROJECT_BINARY_DIR}/../${TICKLIB_CRANDOM}
+    ${PROJECT_BINARY_DIR}/../${TICKLIB_SIMULATION})

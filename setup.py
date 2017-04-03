@@ -20,6 +20,8 @@ import shutil
 import distutils.util
 
 from distutils.command.build import build
+from distutils.command.clean import clean
+
 from setuptools import find_packages, setup, Command
 from setuptools.extension import Extension
 from setuptools.command.install import install
@@ -58,6 +60,7 @@ if python_ver < python_min_ver:
 
 if sys.platform == 'darwin':
     from distutils import sysconfig
+
     vars = sysconfig.get_config_vars()
     vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-dynamiclib')
 
@@ -91,7 +94,6 @@ if os.name == 'posix':
 
 # How do we create shared libs? Dynamic or bundle?
 create_bundle = 'bundle' in sysconfig.get_config_var("LDCXXSHARED")
-create_bundle = False
 
 # Obtain the numpy include directory.
 # This logic works across numpy versions.
@@ -116,9 +118,10 @@ class SwigExtension(Extension):
     library sharing
     """
 
-    def __init__(self, *args, module_ref=None, **kwargs):
+    def __init__(self, *args, module_ref=None, ext_name=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.module_ref = module_ref
+        self.ext_name = ext_name
 
 
 class SwigPath:
@@ -319,9 +322,8 @@ def create_extension(extension_name, module_dir,
     # Adding numpy include directory
     extra_include_dirs.append(numpy_include)
 
-    print(create_bundle)
-
-    if create_bundle or True:
+    if create_bundle:
+        print("Creating bundle for {}".format(extension_name))
         core_module = SwigExtension(extension_path, module_ref=swig_path,
                                     sources=swig_files + cpp_files,
                                     extra_compile_args=extra_compile_args,
@@ -330,8 +332,10 @@ def create_extension(extension_name, module_dir,
                                     swig_opts=swig_opts,
                                     include_dirs=extra_include_dirs,
                                     depends=h_files,
-                                    language="c++", )
+                                    language="c++",
+                                    ext_name=extension_name)
     else:
+        print("Not creating bundle for {}".format(extension_name))
         core_module = SwigExtension(extension_path, module_ref=swig_path,
                                     sources=swig_files + cpp_files,
                                     extra_compile_args=extra_compile_args,
@@ -343,7 +347,8 @@ def create_extension(extension_name, module_dir,
                                     library_dirs=library_dirs,
                                     runtime_library_dirs=runtime_library_dirs,
                                     depends=h_files,
-                                    language="c++", )
+                                    language="c++",
+                                    ext_name=extension_name)
 
     return core_module
 
@@ -546,6 +551,11 @@ inference_extension_info = {
 
 inference_extension = create_extension(**inference_extension_info)
 
+tick_modules = [array_extension, base_extension,
+                test_extension, random_extension, simulation_extension,
+                model_core, prox_core, solver_core,
+                inference_extension]
+
 
 class CustomBuild(build):
     swig_min_ver = (3, 0, 7)
@@ -634,13 +644,19 @@ class BuildCPPTests(TickCommand):
                      '-DCMAKE_BUILD_TYPE=Release',
                      relpath]
 
-        os.makedirs(os.path.join(self.build_dir, 'cpptest'), exist_ok=True)
+        # Feed the path to the built C++ extensions so CMake does not have to
+        # build them again
+        for mod in tick_modules:
+            cmake_cmd.append(
+                '-DTICKLIB_{}={}/{}'.format(mod.ext_name.upper(),
+                                            mod.module_ref.build,
+                                            mod.module_ref.lib_filename))
 
-        subprocess.check_call(cmake_cmd, cwd=self.build_dir)
+        os.makedirs(os.path.join(self.cpp_build_dir, 'cpptest'), exist_ok=True)
 
-        make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs), "VERBOSE=TRUE"]
-        make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs),
-                    ]
+        subprocess.check_call(cmake_cmd, cwd=self.cpp_build_dir)
+
+        make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs)]
         subprocess.check_call(make_cmd, cwd=self.cpp_build_dir)
 
 
@@ -724,13 +740,13 @@ class RunTestSuites(TickCommand):
         self.run_command('pytest')
 
 
-class CleanTick(TickCommand):
+class CleanTick(clean):
     description = 'cleans all generated and built files'
 
     def run(self):
-        self.run_command('clean')
+        clean.run(self)
 
-        shutil.rmtree(build_dir)
+        shutil.rmtree(build_dir, ignore_errors=True)
 
         patterns = [
             '**/*.so',
@@ -762,10 +778,7 @@ setup(name="tick",
       url="https://x-datainitiative.github.io/tick/",
       description="Module for statistical learning, with a particular emphasis "
                   "on time-dependent modelling",
-      ext_modules=[array_extension, base_extension,
-                   test_extension, random_extension, simulation_extension,
-                   model_core, prox_core, solver_core,
-                   inference_extension],
+      ext_modules=tick_modules,
       install_requires=['numpy',
                         'numpydoc',
                         'scipy',
@@ -782,7 +795,7 @@ setup(name="tick",
                 'pytest': RunPyTests,
                 'pylint': RunPyLint,
                 'test': RunTestSuites,
-                'cleantick': CleanTick},
+                'clean': CleanTick},
       classifiers=['Development Status :: 3 - Alpha',
                    'Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',
