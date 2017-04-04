@@ -289,19 +289,21 @@ def create_extension(extension_name, module_dir,
         print(dims)
 
         # Add compile-time location of the dependency library
-        library_dirs.append(os.path.join(build_dir, mod.build))
+        #library_dirs.append(os.path.join(build_dir, mod.build))
 
         # Because setuptools produces shared object files with non-standard
         # names (i.e. not lib<name>.so) we prepend with colon to specify the
         # name directly
-        libraries.append(os.path.join(mod.lib_filename, dims))
+        extra_link_args.append(
+            os.path.abspath(os.path.join(dims, mod.lib_filename))
+        )
         #libraries.append(":" + mod.lib_filename)
 
         # Make sure that the runtime linker can find shared object dependencies
         # by using the relative path to the dependency library. $ORIGIN refers
         # to the location of the current shared object file at runtime
-        #runtime_library_dirs.append(
-        #    "\$ORIGIN/%s" % os.path.relpath(mod.build, swig_path.build))
+        runtime_library_dirs.append(
+            "\$ORIGIN/%s" % os.path.relpath(mod.build, swig_path.build))
 
     extra_link_args.append('-v')
 
