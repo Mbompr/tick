@@ -25,3 +25,5 @@ fi
 export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
 
 (cd googletest && cd build && sudo make -s install)
+
+travis_debug
