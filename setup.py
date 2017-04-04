@@ -60,7 +60,6 @@ if python_ver < python_min_ver:
 
 if sys.platform == 'darwin':
     from distutils import sysconfig
-
     vars = sysconfig.get_config_vars()
     vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-dynamiclib')
 
@@ -93,7 +92,7 @@ if os.name == 'posix':
         os.environ['MACOSX_DEPLOYMENT_TARGET'] = os_version
 
 # How do we create shared libs? Dynamic or bundle?
-create_bundle = 'bundle' in sysconfig.get_config_var("LDCXXSHARED")
+#create_bundle = 'bundle' in sysconfig.get_config_var("LDCXXSHARED")
 
 # Obtain the numpy include directory.
 # This logic works across numpy versions.
@@ -286,19 +285,25 @@ def create_extension(extension_name, module_dir,
         for opts in [swig_opts, extra_compile_args]:
             opts.extend(["-I%s/" % mod.src, "-I%s/" % mod.swig])
 
+        dims = os.path.join(build_dir, mod.build)
+        print(dims)
+
         # Add compile-time location of the dependency library
         library_dirs.append(os.path.join(build_dir, mod.build))
 
         # Because setuptools produces shared object files with non-standard
         # names (i.e. not lib<name>.so) we prepend with colon to specify the
         # name directly
-        libraries.append(":" + mod.lib_filename)
+        libraries.append(os.path.join(mod.lib_filename, dims))
+        #libraries.append(":" + mod.lib_filename)
 
         # Make sure that the runtime linker can find shared object dependencies
         # by using the relative path to the dependency library. $ORIGIN refers
         # to the location of the current shared object file at runtime
-        runtime_library_dirs.append(
-            "\$ORIGIN/%s" % os.path.relpath(mod.build, swig_path.build))
+        #runtime_library_dirs.append(
+        #    "\$ORIGIN/%s" % os.path.relpath(mod.build, swig_path.build))
+
+    extra_link_args.append('-v')
 
     if platform.system() == 'Linux':
         # On some systems we need to manually define the SONAME such that only
@@ -306,7 +311,8 @@ def create_extension(extension_name, module_dir,
         # (together with rpath)
         extra_link_args.append('-Wl,-soname,%s' % swig_path.lib_filename)
     else:
-        extra_link_args.append('-dynamiclib')
+        extra_link_args.append('-Wl,-install_name,%s' % swig_path.lib_filename)
+
 
     for df in debug_flags:
         full_flag = "-D" + df
@@ -322,7 +328,7 @@ def create_extension(extension_name, module_dir,
     # Adding numpy include directory
     extra_include_dirs.append(numpy_include)
 
-    if create_bundle:
+    if False:
         print("Creating bundle for {}".format(extension_name))
         core_module = SwigExtension(extension_path, module_ref=swig_path,
                                     sources=swig_files + cpp_files,
