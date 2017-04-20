@@ -11,7 +11,7 @@
 Hawkes::Hawkes(unsigned int dimension1, int seed)
     : PP(dimension1, seed), kernels(n_nodes * n_nodes), mus(n_nodes) {
   for (unsigned int i = 0; i < n_nodes; i++) {
-    mus[i] = std::make_shared<HawkesMu>();
+    mus[i] = std::make_shared<HawkesBaseline>();
 
     for (unsigned int j = 0; j < n_nodes; j++) {
       kernels[i * n_nodes + j] = std::make_shared<HawkesKernel0>();
@@ -87,7 +87,7 @@ HawkesKernelPtr Hawkes::get_kernel(unsigned int i, unsigned int j) {
   return kernels[i * n_nodes + j];
 }
 
-void Hawkes::set_mu(unsigned int i, const HawkesMuPtr &mu) {
+void Hawkes::set_mu(unsigned int i, const HawkesBaselinePtr &mu) {
   if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
 
   mus[i].reset();
@@ -101,7 +101,7 @@ void Hawkes::set_mu(unsigned int i, const HawkesMuPtr &mu) {
 void Hawkes::set_mu(unsigned int i, double mu) {
   if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
 
-  set_mu(i, std::make_shared<HawkesMu>(mu));
+  set_mu(i, std::make_shared<HawkesBaseline>(mu));
 }
 
 double Hawkes::get_mu(unsigned int i) {

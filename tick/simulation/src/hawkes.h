@@ -27,19 +27,19 @@
 
 
 // This is a constant mu
-/*! \class HawkesMu
+/*! \class HawkesBaseline
  * \brief A basic wrapper of double to represent \f$ \mu \f$ of Hawkes processes
  */
-class HawkesMu {
+class HawkesBaseline {
   // The value
   double mu;
 
  public:
   /**
-   * @brief constructor that takes a double and wrap it in a HawkesMu
+   * @brief constructor that takes a double and wrap it in a HawkesBaseline
    * \param mu : The value of \f$ \mu \f$
    */
-  explicit HawkesMu(double mu = 0) { this->mu = mu; }
+  explicit HawkesBaseline(double mu = 0) { this->mu = mu; }
 
   /// @brief getter for \f$ \mu \f$
   virtual double get_value() { return mu; }
@@ -50,7 +50,7 @@ class HawkesMu {
   }
 };
 
-typedef std::shared_ptr<HawkesMu> HawkesMuPtr;
+typedef std::shared_ptr<HawkesBaseline> HawkesBaselinePtr;
 
 
 //*********************************************************************************
@@ -79,7 +79,7 @@ class Hawkes : public PP {
   std::vector<HawkesKernelPtr> kernels;
 
   /// @brief The mus
-  std::vector<HawkesMuPtr> mus;
+  std::vector<HawkesBaselinePtr> mus;
 
  public :
   /**
@@ -117,14 +117,14 @@ class Hawkes : public PP {
   /**
    * @brief Set mu for a specific dimension
    * \param i : the dimension
-   * \param mu : the HawkesMu to be set
+   * \param mu : the HawkesBaseline to be set
    */
-  void set_mu(unsigned int i, const HawkesMuPtr &mu);
+  void set_mu(unsigned int i, const HawkesBaselinePtr &mu);
 
   /**
    * @brief Set mu for a specific dimension
    * \param i : the dimension
-   * \param mu : a double that will be used to construct a HawkesMu
+   * \param mu : a double that will be used to construct a HawkesBaseline
    */
   void set_mu(unsigned int i, double mu);
 
