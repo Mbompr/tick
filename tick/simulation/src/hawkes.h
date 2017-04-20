@@ -31,7 +31,20 @@
  * \brief A basic wrapper of double to represent \f$ \mu \f$ of Hawkes processes
  */
 class HawkesBaseline {
-  // The value
+ public:
+  HawkesBaseline() {}
+
+  /// @brief getter for \f$ \mu \f$
+  virtual double get_value(double t) = 0;
+
+  template<class Archive>
+  void serialize(Archive &ar) { }
+};
+
+typedef std::shared_ptr<HawkesBaseline> HawkesBaselinePtr;
+
+class HawkesConstantBaseline : public HawkesBaseline {
+  //! @brief The value
   double mu;
 
  public:
@@ -39,18 +52,18 @@ class HawkesBaseline {
    * @brief constructor that takes a double and wrap it in a HawkesBaseline
    * \param mu : The value of \f$ \mu \f$
    */
-  explicit HawkesBaseline(double mu = 0) { this->mu = mu; }
+  explicit HawkesConstantBaseline(double mu = 0) { this->mu = mu; }
 
   /// @brief getter for \f$ \mu \f$
-  virtual double get_value() { return mu; }
+  double get_value(double t) override { return mu; }
 
   template<class Archive>
   void serialize(Archive &ar) {
+    ar(cereal::make_nvp("HawkesBaseline", cereal::base_class<HawkesBaseline>(this)));
     ar(CEREAL_NVP(mu));
   }
 };
-
-typedef std::shared_ptr<HawkesBaseline> HawkesBaselinePtr;
+CEREAL_REGISTER_TYPE(HawkesConstantBaseline);
 
 
 //*********************************************************************************
@@ -117,22 +130,9 @@ class Hawkes : public PP {
   /**
    * @brief Set mu for a specific dimension
    * \param i : the dimension
-   * \param mu : the HawkesBaseline to be set
-   */
-  void set_mu(unsigned int i, const HawkesBaselinePtr &mu);
-
-  /**
-   * @brief Set mu for a specific dimension
-   * \param i : the dimension
    * \param mu : a double that will be used to construct a HawkesBaseline
    */
   void set_mu(unsigned int i, double mu);
-
-  /**
-   * @brief Get mu for a specific dimension
-   * \param i : the dimension
-   */
-  double get_mu(unsigned int i);
 
  private :
   /**
@@ -157,6 +157,19 @@ class Hawkes : public PP {
   virtual bool update_time_shift_(double delay,
                                   ArrayDouble &intensity,
                                   double *total_intensity_bound);
+
+  /**
+   * @brief Get mu for a specific dimension
+   * \param i : the dimension
+   */
+  double get_mu(unsigned int i, double t);
+
+  /**
+   * @brief Set mu for a specific dimension
+   * \param i : the dimension
+   * \param mu : the HawkesBaseline to be set
+   */
+  void set_mu(unsigned int i, const HawkesBaselinePtr &mu);
 
  public:
   template<class Archive>

@@ -12,7 +12,6 @@ class Hawkes : public PP {
   void set_kernel(int i,int j, std::shared_ptr<HawkesKernel> kernel);
 
   void set_mu(int i, double mu);
-  double get_mu(int i);
 };
 
 TICK_MAKE_PICKLABLE(Hawkes, 0);
