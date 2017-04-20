@@ -5,9 +5,15 @@
 #ifndef TICK_SIMULATION_SRC_HAWKES_H_
 #define TICK_SIMULATION_SRC_HAWKES_H_
 
+#include "defs.h"
+
+#include <cfloat>
+
 #include <memory>
+
 #include "time_func.h"
-#include <float.h>
+#include "varray.h"
+#include "pp.h"
 
 #include "hawkes_kernels/hawkes_kernel.h"
 #include "hawkes_kernels/hawkes_kernel_0.h"
@@ -15,9 +21,6 @@
 #include "hawkes_kernels/hawkes_kernel_power_law.h"
 #include "hawkes_kernels/hawkes_kernel_sum_exp.h"
 #include "hawkes_kernels/hawkes_kernel_time_func.h"
-
-#include "varray.h"
-#include "pp.h"
 
 //*********************************************************************************
 //

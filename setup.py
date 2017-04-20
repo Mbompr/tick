@@ -599,7 +599,7 @@ class CustomBuild(build):
 class CustomInstall(install):
     def run(self):
         self.run_command('build_ext')
-        self.do_egg_install()
+        install.run(self)
 
 
 class TickCommand(Command):
@@ -648,9 +648,21 @@ class BuildCPPTests(TickCommand):
 
     def run(self):
         relpath = os.path.relpath(self.tick_dir, self.cpp_build_dir)
-        cmake_cmd = ['cmake',
-                     '-DCMAKE_BUILD_TYPE=Release',
+        cmake_exe = os.environ.get('TICK_CMAKE', 'cmake')
+
+        from distutils import sysconfig
+
+        cmake_cmd = [cmake_exe,
+                     '-DCMAKE_BUILD_TYPE=Debug',
+                     '-DPYTHON_INCLUDE_DIR={}'.format(sysconfig.get_python_inc()),
+                     '-DPYTHON_LIBRARY={}'.format(os.path.join(sysconfig.get_config_var('LIBDIR'), sysconfig.get_config_var('LDLIBRARY'))),
                      relpath]
+
+        # for x, y in sysconfig.get_config_vars().items():
+        #     if 'LIB' in x:
+        #         print(x, y)
+        #
+        # return False
 
         # Feed the path to the built C++ extensions so CMake does not have to
         # build them again
@@ -661,7 +673,6 @@ class BuildCPPTests(TickCommand):
                                             mod.module_ref.lib_filename))
 
         os.makedirs(os.path.join(self.cpp_build_dir, 'cpptest'), exist_ok=True)
-
         subprocess.check_call(cmake_cmd, cwd=self.cpp_build_dir)
 
         make_cmd = ['make', 'all', '-j{}'.format(self.build_jobs)]

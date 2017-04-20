@@ -7,8 +7,9 @@ add_executable(tick_test_hawkes
         )
 
 target_link_libraries(tick_test_hawkes
-    ${TICK_TEST_LIBS}
     ${PROJECT_BINARY_DIR}/../${TICKLIB_ARRAY}
     ${PROJECT_BINARY_DIR}/../${TICKLIB_BASE}
     ${PROJECT_BINARY_DIR}/../${TICKLIB_CRANDOM}
-    ${PROJECT_BINARY_DIR}/../${TICKLIB_SIMULATION})
+    ${PROJECT_BINARY_DIR}/../${TICKLIB_SIMULATION}
+    ${TICK_TEST_LIBS}
+    )

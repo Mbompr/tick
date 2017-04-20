@@ -1,4 +1,5 @@
 sudo: required
+language: generic
 
 branches:
   only:
@@ -13,34 +14,21 @@ cache:
 matrix:
   include:
   - os: linux
-    language: generic
-    env: TOXENV=py34
-  - os: linux
-    language: generic
-    env: TOXENV=py35
+    services: docker
+    env: DOCKER_IMAGE=vinther/tickenv:0.2
   - os: osx
-    language: generic
     env: TOXENV=py34
   - os: osx
-    language: generic
     env: TOXENV=py35
-
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source .travis_install_mac.sh; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source .travis_install_linux.sh; fi
 
 install:
-  - python -m pip install --quiet -U pip
-  - python -m pip install --quiet numpy pandas
-  - python -m pip install -r requirements.txt
-  - python -m pip install cpplint
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source .travis_install_mac.sh; fi
 
 script:
-  - python setup.py build_ext --inplace
-  - python setup.py cpptest
-  - python setup.py pytest
-  - python setup.py cpplint
-  - export PYTHONPATH=${PYTHONPATH}:${TRAVIS_BUILD_DIR} && (cd DOC && make doctest)
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python setup.py build_ext --inplace cpptest pytest cpplint; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker run -v `pwd`:/io "$DOCKER_IMAGE" /io/tools/docker/build_wheels.sh; fi
+
+  #- export PYTHONPATH=${PYTHONPATH}:${TRAVIS_BUILD_DIR} && (cd DOC && make doctest)
 
 notifications:
   slack:

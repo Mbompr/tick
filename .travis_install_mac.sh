@@ -3,6 +3,8 @@
 brew update
 brew install swig pyenv
 
+eval "$(pyenv init -)"
+
 case "${TOXENV}" in
     py34)
         env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install -s 3.4.5
@@ -14,7 +16,8 @@ case "${TOXENV}" in
         ;;
 esac
 
-eval "$(pyenv init -)"
+python -m pip install --quiet numpy pandas cpplint -U pip
+python -m pip install -r requirements.txt
 
 if [ ! -d googletest ] || [ ! -f googletest/CMakeLists.txt ]
     then
@@ -25,5 +28,3 @@ fi
 export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
 
 (cd googletest && cd build && sudo make -s install)
-
-travis_debug

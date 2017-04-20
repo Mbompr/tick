@@ -46,7 +46,7 @@ if (${GTEST_FOUND})
     set(TICK_TEST_LIBS
         ${PYTHON_LIBRARIES}
         ${GTEST_BOTH_LIBRARIES}
-        ${CMAKE_THREAD_LIBS_INIT})
+        ${CMAKE_THREAD_LIBS_INIT} -lrt -ldl -lutil)
 
     if(APPLE)
         find_library(ACCELERATE_LIBRARY Accelerate)

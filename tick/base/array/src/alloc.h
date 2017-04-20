@@ -3,8 +3,6 @@
 
 /** @file */
 
-#include "debug.h"
-
 //
 // Macros PYDECREF, PYINCREF, _PYSHARED_FREE_ARRAY and _PYSHARED_ALLOC_ARRAY
 //
@@ -20,6 +18,8 @@
 #define _PYSHARED_FREE_ARRAY(ptr) delete[](ptr)
 #define _PYSHARED_ALLOC_ARRAY(ptr, type, n) ptr = new type[n]
 #endif
+
+#include "debug.h"
 
 //
 // Macros PYSHARED_FREE_ARRAY and PYSHARED_ALLOC_ARRAY
