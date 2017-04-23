@@ -1,0 +1,31 @@
+FROM quay.io/pypa/manylinux1_x86_64
+WORKDIR /tick
+
+RUN yum update -y && yum install -y zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel pcre-devel atlas-devel cmake
+
+ENV PATH="/root/.pyenv/bin:$PATH" SWIG_VER=3.0.12
+
+# Installing pyenv
+RUN curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
+
+# Installing swig
+RUN wget http://prdownloads.sourceforge.net/swig/swig-${SWIG_VER}.tar.gz && tar -xf swig-${SWIG_VER}.tar.gz && \
+	cd swig-${SWIG_VER} && ./configure && make && make install && \
+	rm -rf swig-${SWIG_VER}.tar.gz swig-${SWIG_VER} 
+
+# Installing googletest
+RUN git clone https://github.com/google/googletest.git && \
+	(cd googletest && mkdir -p build && cd build && cmake28 .. && make && make install) && \
+	rm -rf googletest
+
+# Installing necessary python versions
+RUN pyenv install 3.4.5 && pyenv install 3.5.2
+
+COPY requirements.txt requirements.txt 
+
+RUN eval "$(pyenv init -)" && \ 
+	pyenv local 3.4.5 && pip install cpplint wheel twine -r requirements.txt --upgrade pip && \
+	pyenv local 3.5.2 && pip install cpplint wheel twine -r requirements.txt --upgrade pip
+
+LABEL maintainer "soren.poulsen@polytechnique.edu"
+ENV TICK_CMAKE=cmake28

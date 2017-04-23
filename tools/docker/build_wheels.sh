@@ -1,22 +1,25 @@
 #!/bin/sh
 
-set -e
+set -e -x
 
-yum update -y
-
-cd /io
+cp -R /io src
+cd src
 
 eval "$(pyenv init -)" 
-export TICK_CMAKE=cmake28
 
-#rm -rf dist build tick.egg-info
+case "${PYVER}" in
+    py34)
+        pyenv local 3.4.5
+        ;;
+    py35)
+        pyenv local 3.5.2
+        ;;
+esac
 
-for PYBIN in "3.4.5" "3.5.2"; do
-	pyenv local $PYBIN
-	python -V
-	python setup.py cpplint build pytest bdist_wheel
-done
+python -V
+python setup.py cpplint #pylint
+python setup.py build_ext --inplace pytest bdist_wheel
 
 for whl in dist/*.whl; do
-	auditwheel repair "$whl" -w /io/dist/wheelhouse
+	python -mauditwheel repair "$whl" -w /io/dist/wheelhouse
 done
