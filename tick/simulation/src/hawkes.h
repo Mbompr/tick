@@ -6,8 +6,6 @@
 #define TICK_SIMULATION_SRC_HAWKES_H_
 
 #include <memory>
-#include "time_func.h"
-#include <float.h>
 
 #include "hawkes_baselines/baseline.h"
 #include "hawkes_baselines/constant_baseline.h"
@@ -22,13 +20,6 @@
 
 #include "varray.h"
 #include "pp.h"
-
-
-//*********************************************************************************
-//
-// The Hawkes class
-//
-//*********************************************************************************
 
 
 /*! \class Hawkes
@@ -50,19 +41,17 @@ class Hawkes : public PP {
   std::vector<HawkesKernelPtr> kernels;
 
   /// @brief The mus
-  std::vector<HawkesBaselinePtr> mus;
+  std::vector<HawkesBaselinePtr> baselines;
 
  public :
   /**
    * @brief A constructor for an empty multidimensional Hawkes process
-   * \param dimension : The dimension of the Hawkes process
+   * \param n_nodes : The dimension of the Hawkes process
    */
-  explicit Hawkes(unsigned int dimension, int seed = -1);
+  explicit Hawkes(unsigned int n_nodes, int seed = -1);
 
   // This forbids the unwanted copy of an Hawkes process
   Hawkes(Hawkes &hawkes) = delete;
-
-  ~Hawkes();
 
  public:
   virtual void reset();
@@ -86,21 +75,27 @@ class Hawkes : public PP {
   HawkesKernelPtr get_kernel(unsigned int i, unsigned int j);
 
   /**
-   * @brief Set mu for a specific dimension
+   * @brief Set baseline for a specific dimension
    * \param i : the dimension
-   * \param mu : a double that will be used to construct a HawkesBaseline
+   * \param baseline : a double that will be used to construct a HawkesConstantBaseline
    */
-  void set_mu(unsigned int i, double mu);
-
-
-  void set_mu(unsigned int i, TimeFunction time_function);
+  void set_baseline(unsigned int i, double baseline);
 
   /**
-  * @brief Set mu for a specific dimension
+   * @brief Set baseline for a specific dimension
+   * \param i : the dimension
+   * \param time_function : a TimeFunction that will be used to construct a
+   * HawkesTimeFunctionBaseline
+   */
+  void set_baseline(unsigned int i, TimeFunction time_function);
+
+  /**
+  * @brief Set baseline for a specific dimension
   * \param i : the dimension
-  * \param mu : a double that will be used to construct a HawkesBaseline
+  * \param times : times that will be used to construct a HawkesTimeFunctionBaseline
+  * \param values : values that will be used to construct a HawkesTimeFunctionBaseline
   */
-  void set_mu(unsigned int i, ArrayDouble &times, ArrayDouble &values);
+  void set_baseline(unsigned int i, ArrayDouble &times, ArrayDouble &values);
 
  private :
   /**
@@ -127,26 +122,32 @@ class Hawkes : public PP {
                                   double *total_intensity_bound);
 
   /**
-   * @brief Get mu for a specific dimension
+   * @brief Get baseline for a specific dimension at a given time
    * \param i : the dimension
+   * \param t : considered time
    */
-  double get_mu(unsigned int i, double t);
-
-  double get_mu_bound(unsigned int i, double t);
+  double get_baseline(unsigned int i, double t);
 
   /**
-   * @brief Set mu for a specific dimension
+   * @brief Get future baseline maximum reachable value for a specific dimension at a given time
    * \param i : the dimension
-   * \param mu : the HawkesBaseline to be set
+   * \param t : considered time
    */
-  void set_mu(unsigned int i, const HawkesBaselinePtr &mu);
+  double get_baseline_bound(unsigned int i, double t);
+
+  /**
+   * @brief Set baseline for a specific dimension
+   * \param i : the dimension
+   * \param baseline : the HawkesBaseline to be set
+   */
+  void set_baseline(unsigned int i, const HawkesBaselinePtr &baseline);
 
  public:
   template<class Archive>
   void serialize(Archive &ar) {
     ar(cereal::make_nvp("PP", cereal::base_class<PP>(this)));
 
-    ar(CEREAL_NVP(mus));
+    ar(CEREAL_NVP(baselines));
     ar(CEREAL_NVP(kernels));
   }
 };

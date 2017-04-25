@@ -205,15 +205,15 @@ class SimuHawkes(SimuPointProcess):
         error_msg = 'Baseline element must be either a float or a ' \
                     'tuple of 2 np.ndarray or a TimeFunction'
         if isinstance(baseline, (float, int)):
-            self._pp.set_mu(i, baseline)
+            self._pp.set_baseline(i, baseline)
         elif isinstance(baseline, tuple):
             if len(baseline) != 2:
                 ValueError(error_msg)
             t_values = baseline[0]
             y_values = baseline[1]
-            self._pp.set_mu(i, t_values, y_values)
+            self._pp.set_baseline(i, t_values, y_values)
         elif isinstance(baseline, TimeFunction):
-            self._pp.set_mu(i, baseline._time_function)
+            self._pp.set_baseline(i, baseline._time_function)
         else:
             raise ValueError(error_msg)
 

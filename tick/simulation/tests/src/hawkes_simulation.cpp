@@ -15,7 +15,7 @@ class SimuHawkesTest : public ::testing::Test {
 
 TEST_F(SimuHawkesTest, constant_baseline) {
   Hawkes hawkes(1);
-  hawkes.set_mu(0, 5.);
+  hawkes.set_baseline(0, 5.);
   const double simu_time = 10;
   hawkes.simulate(simu_time);
   EXPECT_EQ(hawkes.get_time(), simu_time);
@@ -26,7 +26,7 @@ TEST_F(SimuHawkesTest, tuple_baseline) {
   ArrayDouble t_values {1., 2., 4., 5.3};
   ArrayDouble y_values {1., 3., 2., 0.};
   Hawkes hawkes(1);
-  hawkes.set_mu(0, t_values, y_values);
+  hawkes.set_baseline(0, t_values, y_values);
   const double simu_time = 100;
   hawkes.simulate(simu_time);
   EXPECT_EQ(hawkes.get_time(), simu_time);

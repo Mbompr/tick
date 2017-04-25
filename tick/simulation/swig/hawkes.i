@@ -11,9 +11,9 @@ class Hawkes : public PP {
 
   void set_kernel(unsigned int i, unsigned int j, std::shared_ptr<HawkesKernel> kernel);
 
-  void set_mu(unsigned int i, double mu);
-  void set_mu(unsigned int i, ArrayDouble &times, ArrayDouble &values);
-  void set_mu(unsigned int i, TimeFunction time_function);
+  void set_baseline(unsigned int i, double baseline);
+  void set_baseline(unsigned int i, ArrayDouble &times, ArrayDouble &values);
+  void set_baseline(unsigned int i, TimeFunction time_function);
 };
 
 TICK_MAKE_PICKLABLE(Hawkes, 0);
