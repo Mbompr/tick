@@ -9,6 +9,10 @@
 #include "time_func.h"
 #include <float.h>
 
+#include "hawkes_baselines/baseline.h"
+#include "hawkes_baselines/constant_baseline.h"
+#include "hawkes_baselines/timefunction_baseline.h"
+
 #include "hawkes_kernels/hawkes_kernel.h"
 #include "hawkes_kernels/hawkes_kernel_0.h"
 #include "hawkes_kernels/hawkes_kernel_exp.h"
@@ -18,93 +22,6 @@
 
 #include "varray.h"
 #include "pp.h"
-
-//*********************************************************************************
-//
-// The mu class allows to define 1 element of the mu vector
-//
-//*********************************************************************************
-
-
-// This is a constant mu
-/*! \class HawkesBaseline
- * \brief A basic wrapper of double to represent \f$ \mu \f$ of Hawkes processes
- */
-class HawkesBaseline {
- public:
-  HawkesBaseline() {}
-
-  /// @brief getter for \f$ \mu \f$
-  virtual double get_value(double t) = 0;
-
-  virtual double get_future_bound(double t) {return get_value(t); };
-
-  template<class Archive>
-  void serialize(Archive &ar) {}
-};
-
-typedef std::shared_ptr<HawkesBaseline> HawkesBaselinePtr;
-
-class HawkesConstantBaseline : public HawkesBaseline {
-  //! @brief The value
-  double mu;
-
- public:
-  /**
-   * @brief constructor that takes a double and wrap it in a HawkesBaseline
-   * \param mu : The value of \f$ \mu \f$
-   */
-  explicit HawkesConstantBaseline(double mu = 0) { this->mu = mu; }
-
-  /// @brief getter for \f$ \mu \f$
-  double get_value(double t) override { return mu; }
-
-  template<class Archive>
-  void serialize(Archive &ar) {
-    ar(cereal::make_nvp("HawkesBaseline", cereal::base_class<HawkesBaseline>(this)));
-    ar(CEREAL_NVP(mu));
-  }
-};
-CEREAL_REGISTER_TYPE(HawkesConstantBaseline);
-
-class HawkesTimeFunctionBaseline : public HawkesBaseline {
-  //! @brief The value
-  TimeFunction time_function;
-
- public:
-
-  //! @brief default constructor (0 baseline)
-  HawkesTimeFunctionBaseline() : time_function(0.) { };
-
-  //! @brief TimeFunction constructor
-  HawkesTimeFunctionBaseline(TimeFunction time_function): time_function(time_function) { };
-
-  /**
-   * @brief constructor that takes a double and wrap it in a HawkesBaseline
-   * \param times : The changing times of the baseline
-   * \param values : The values of \f$ \mu \f$
-   */
-  HawkesTimeFunctionBaseline(ArrayDouble &times, ArrayDouble &values) {
-    time_function = TimeFunction(times, values, time_function.Cyclic,
-                                 time_function.InterConstRight);
-  }
-
-  /// @brief getter for \f$ \mu \f$
-  double get_value(double t) override {
-    return time_function.value(t);
-  }
-
-  double get_future_bound(double t) override {
-    return time_function.future_bound(t);
-  }
-
-  template<class Archive>
-  void serialize(Archive &ar) {
-    ar(cereal::make_nvp("HawkesBaseline", cereal::base_class<HawkesBaseline>(this)));
-    ar(CEREAL_NVP(time_function));
-  }
-};
-CEREAL_REGISTER_TYPE(HawkesTimeFunctionBaseline);
 
 
 //*********************************************************************************
