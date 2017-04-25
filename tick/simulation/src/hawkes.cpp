@@ -25,7 +25,7 @@ void Hawkes::init_intensity_(ArrayDouble &intensity, double *total_intensity_bou
   *total_intensity_bound = 0;
   for (unsigned int i = 0; i < n_nodes; i++) {
     intensity[i] = get_mu(i, 0.);
-    *total_intensity_bound += intensity[i];
+    *total_intensity_bound += get_mu_bound(i, 0.);
   }
 }
 
@@ -39,7 +39,7 @@ bool Hawkes::update_time_shift_(double delay,
   for (unsigned int i = 0; i < n_nodes; i++) {
     intensity[i] = get_mu(i, get_time());
     if (total_intensity_bound1)
-      *total_intensity_bound1 += intensity[i];
+      *total_intensity_bound1 += get_mu_bound(i, get_time());
 
     for (unsigned int j = 0; j < n_nodes; j++) {
       HawkesKernelPtr &k = kernels[i * n_nodes + j];
@@ -104,10 +104,28 @@ void Hawkes::set_mu(unsigned int i, double mu) {
   set_mu(i, std::make_shared<HawkesConstantBaseline>(mu));
 }
 
+void Hawkes::set_mu(unsigned int i, TimeFunction time_function) {
+  if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
+
+  set_mu(i, std::make_shared<HawkesTimeFunctionBaseline>(time_function));
+}
+
+void Hawkes::set_mu(unsigned int i, ArrayDouble &times, ArrayDouble &values) {
+  if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
+
+  set_mu(i, std::make_shared<HawkesTimeFunctionBaseline>(times, values));
+}
+
 double Hawkes::get_mu(unsigned int i, double t) {
   if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
 
   return mus[i]->get_value(t);
+}
+
+double Hawkes::get_mu_bound(unsigned int i, double t) {
+  if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
+
+  return mus[i]->get_future_bound(t);
 }
 
 

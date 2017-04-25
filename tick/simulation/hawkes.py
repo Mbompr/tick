@@ -2,6 +2,8 @@ import warnings
 from itertools import product
 
 import numpy as np
+
+from tick.base import TimeFunction
 from tick.simulation.base import SimuPointProcess
 from numpy.linalg import eig, inv
 
@@ -16,12 +18,13 @@ class SimuHawkes(SimuPointProcess):
     
     .. math::
         \\forall i \\in [1 \\dots D], \\quad
-        \\lambda_i(t) = \\mu_i + \\sum_{j=1}^D \\int \\phi_{ij}(t - s) dN_j(s)
+        \\lambda_i(t) = \\mu_i(t) + 
+                        \\sum_{j=1}^D \\int \\phi_{ij}(t - s) dN_j(s)
 
     where
     
     * :math:`D` is the number of nodes
-    * :math:`\mu_i` are the baseline intensities
+    * :math:`\mu_i(t)` are the baseline intensities
     * :math:`\phi_{ij}` are the kernels
     * :math:`dN_j` are the processes differentiates
 
@@ -31,7 +34,10 @@ class SimuHawkes(SimuPointProcess):
         A 2-dimensional arrays of kernels, also noted :math:`\phi_{ij}`
 
     baseline : `np.ndarray`, shape=(n_nodes, )
-        The baseline of all intensities, also noted :math:`\mu`
+        The baseline of all intensities, also noted :math:`\mu(t)`
+        It might be either an array of numbers for constant baselines or an 
+        array of `tick.base.TimeFunction`  for time varying baseline or tuple 
+        of `(t_values, y_values)` for piecewise constant baselines. 
 
     n_nodes : `int`
         The number of nodes of the Hawkes process. If kernels and baseline
@@ -97,14 +103,25 @@ class SimuHawkes(SimuPointProcess):
             kernels = np.array(kernels)
 
         if isinstance(baseline, list):
-            baseline = np.array(baseline)
+            if isinstance(baseline[0], tuple):
+                # This loop is necessary, otherwise tuples are converted to
+                # np.ndarray
+                array_baseline = np.empty((len(baseline)), dtype=object)
+                for i, b_tuple in enumerate(baseline):
+                    t_values, y_values = b_tuple
+                    array_baseline[i] = (np.asarray(t_values, dtype=float),
+                                         np.asarray(y_values, dtype=float))
+                baseline = array_baseline
+            else:
+                baseline = np.asarray(baseline)
 
-        if baseline is not None and baseline.dtype != float:
-            baseline = baseline.astype(float)
+        if baseline is not None:
+            if baseline.dtype not in [float, object]:
+                baseline = baseline.astype(float)
 
         self.check_parameters_coherence(kernels, baseline, n_nodes)
 
-        # Init _pp so we hae access to self.n_nodes
+        # Init _pp so we have access to self.n_nodes
         if n_nodes is None:
             if baseline is not None:
                 n_nodes = baseline.shape[0]
@@ -128,7 +145,7 @@ class SimuHawkes(SimuPointProcess):
         if baseline is not None:
             if baseline.shape != (self.n_nodes,):
                 raise ValueError("baseline shape should be %s instead of %s" %
-                                 ((self.n_nodes,), self.baseline.shape))
+                                 ((self.n_nodes,), baseline.shape))
             self.baseline = baseline
             self._init_baseline()
 
@@ -185,12 +202,25 @@ class SimuHawkes(SimuPointProcess):
 
     def set_baseline(self, i, baseline):
         self.baseline[i] = baseline
-        self._pp.set_mu(i, baseline)
+        error_msg = 'Baseline element must be either a float or a ' \
+                    'tuple of 2 np.ndarray or a TimeFunction'
+        if isinstance(baseline, (float, int)):
+            self._pp.set_mu(i, baseline)
+        elif isinstance(baseline, tuple):
+            if len(baseline) != 2:
+                ValueError(error_msg)
+            t_values = baseline[0]
+            y_values = baseline[1]
+            self._pp.set_mu(i, t_values, y_values)
+        elif isinstance(baseline, TimeFunction):
+            self._pp.set_mu(i, baseline._time_function)
+        else:
+            raise ValueError(error_msg)
 
     def _simulate(self):
         """Launch simulation of the Hawkes process by thinning
         """
-        if np.linalg.norm(self.baseline) == 0:
+        if self.baseline.dtype == float and np.linalg.norm(self.baseline) == 0:
             warnings.warn("Baselines have not been set, hence this hawkes "
                           "process won't jump")
 

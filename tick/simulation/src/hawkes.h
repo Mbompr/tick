@@ -37,8 +37,10 @@ class HawkesBaseline {
   /// @brief getter for \f$ \mu \f$
   virtual double get_value(double t) = 0;
 
+  virtual double get_future_bound(double t) {return get_value(t); };
+
   template<class Archive>
-  void serialize(Archive &ar) { }
+  void serialize(Archive &ar) {}
 };
 
 typedef std::shared_ptr<HawkesBaseline> HawkesBaselinePtr;
@@ -64,6 +66,45 @@ class HawkesConstantBaseline : public HawkesBaseline {
   }
 };
 CEREAL_REGISTER_TYPE(HawkesConstantBaseline);
+
+class HawkesTimeFunctionBaseline : public HawkesBaseline {
+  //! @brief The value
+  TimeFunction time_function;
+
+ public:
+
+  //! @brief default constructor (0 baseline)
+  HawkesTimeFunctionBaseline() : time_function(0.) { };
+
+  //! @brief TimeFunction constructor
+  HawkesTimeFunctionBaseline(TimeFunction time_function): time_function(time_function) { };
+
+  /**
+   * @brief constructor that takes a double and wrap it in a HawkesBaseline
+   * \param times : The changing times of the baseline
+   * \param values : The values of \f$ \mu \f$
+   */
+  HawkesTimeFunctionBaseline(ArrayDouble &times, ArrayDouble &values) {
+    time_function = TimeFunction(times, values, time_function.Cyclic,
+                                 time_function.InterConstRight);
+  }
+
+  /// @brief getter for \f$ \mu \f$
+  double get_value(double t) override {
+    return time_function.value(t);
+  }
+
+  double get_future_bound(double t) override {
+    return time_function.future_bound(t);
+  }
+
+  template<class Archive>
+  void serialize(Archive &ar) {
+    ar(cereal::make_nvp("HawkesBaseline", cereal::base_class<HawkesBaseline>(this)));
+    ar(CEREAL_NVP(time_function));
+  }
+};
+CEREAL_REGISTER_TYPE(HawkesTimeFunctionBaseline);
 
 
 //*********************************************************************************
@@ -134,6 +175,16 @@ class Hawkes : public PP {
    */
   void set_mu(unsigned int i, double mu);
 
+
+  void set_mu(unsigned int i, TimeFunction time_function);
+
+  /**
+  * @brief Set mu for a specific dimension
+  * \param i : the dimension
+  * \param mu : a double that will be used to construct a HawkesBaseline
+  */
+  void set_mu(unsigned int i, ArrayDouble &times, ArrayDouble &values);
+
  private :
   /**
    * @brief Virtual method called once (at startup) to set the initial
@@ -163,6 +214,8 @@ class Hawkes : public PP {
    * \param i : the dimension
    */
   double get_mu(unsigned int i, double t);
+
+  double get_mu_bound(unsigned int i, double t);
 
   /**
    * @brief Set mu for a specific dimension
