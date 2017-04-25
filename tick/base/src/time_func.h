@@ -26,7 +26,8 @@ class TimeFunction {
     enum BorderType {
         Border0 = 0,
         BorderConstant,
-        BorderContinue
+        BorderContinue,
+        Cyclic,
     };
 
  public:

@@ -18,7 +18,9 @@ TimeFunction::TimeFunction(double y) {
   border_type = DEFAULT_BORDER;
 }
 
-TimeFunction::TimeFunction(const ArrayDouble &Y, BorderType type, InterMode mode, double dt, double border_value)
+TimeFunction::TimeFunction(const ArrayDouble &Y,
+                           BorderType type, InterMode mode,
+                           double dt, double border_value)
     : inter_mode(mode), border_type(type), dt(dt), border_value(border_value) {
   sampled_y = SArrayDouble::new_ptr(Y.size());
   std::copy(Y.data(), Y.data() + Y.size(), sampled_y->data());
@@ -56,7 +58,8 @@ TimeFunction::TimeFunction(const ArrayDouble &T, const ArrayDouble &Y,
     dt = dt1;
   }
 
-  if (dt < 10 * FLOOR_THRESHOLD) TICK_ERROR("dt is too small, we currently cannot reach this precision");
+  if (dt < 10 * FLOOR_THRESHOLD) TICK_ERROR(
+      "dt is too small, we currently cannot reach this precision");
 
   t0 = T[0];
   last_value_before_border = T[size - 1];
@@ -66,6 +69,8 @@ TimeFunction::TimeFunction(const ArrayDouble &T, const ArrayDouble &Y,
     case (BorderType::BorderConstant):border_value = border_value1;
       break;
     case (BorderType::BorderContinue):border_value = Y[size - 1];
+      break;
+    case (BorderType::Cyclic):border_value = 0;
       break;
   }
 
@@ -93,9 +98,8 @@ TimeFunction::TimeFunction(const ArrayDouble &T, const ArrayDouble &Y,
   double t_right = T[index_left + 1];
   double y_right = Y[index_left + 1];
 
-  double *const sampled_y_ptr = (*sampled_y).data();
   for (ulong i = 0; i < sampled_y->size(); ++i) {
-    if (t > t_right + FLOOR_THRESHOLD) {
+    while (t > t_right + FLOOR_THRESHOLD && index_left < size - 2) {
       // Ensure we are not behind the last point. This might happen if dt does not divides length
       // In this case we keep the last two points to interpolate
       if (index_left < size - 2) {
@@ -107,7 +111,7 @@ TimeFunction::TimeFunction(const ArrayDouble &T, const ArrayDouble &Y,
       }
     }
 
-    sampled_y_ptr[i] = interpolation(t_left, y_left, t_right, y_right, t);
+    (*sampled_y)[i] = interpolation(t_left, y_left, t_right, y_right, t);
     t += dt;
   }
 
@@ -126,24 +130,36 @@ void TimeFunction::compute_future_max() {
   ulong sample_size = sampled_y->size();
   future_max = SArrayDouble::new_ptr(sample_size);
 
-  double previous_max = border_value;
-  // condition is : i + 1 > 0 as an ulong cannot be negative
-  for (ulong i = sample_size - 1; i + 1 > 0; --i) {
-    (*future_max)[i] = std::max((*sampled_y)[i], previous_max);
-    previous_max = (*future_max)[i];
+  if (border_type != Cyclic) {
+    double previous_max = border_value;
+    // condition is : i + 1 > 0 as an ulong cannot be negative
+    for (ulong i = sample_size - 1; i + 1 > 0; --i) {
+      (*future_max)[i] = std::max((*sampled_y)[i], previous_max);
+      previous_max = (*future_max)[i];
+    }
+  } else {
+    // if border is cyclic then future max in global max
+    double max_value = sampled_y->max();
+    future_max->fill(max_value);
   }
-//    cout << "future max" << endl;
-//    future_max->print();
 }
 
 double TimeFunction::value(double t) {
   // First handle if we are out of the border
 
   // this test must be the first one otherwise we might have problem with constant TimeFunctions
-  if (t > last_value_before_border + FLOOR_THRESHOLD)
-    return border_value;
+  if (t > last_value_before_border + FLOOR_THRESHOLD) {
+    if (border_type != Cyclic) {
+      return border_value;
+    } else {
+      // If border type is cyclic then we simply return the value it would have in the first cycle
+      const double divider = last_value_before_border;
+      const int quotient = static_cast<int>(FLOOR(t / divider));
+      return value(t - quotient * divider);
+    }
+  }
 
-    // TODO : which behavior do we want if t < t0
+    // which behavior do we want if t < t0
   else if (t < t0)
     return 0.0;
   else if (t < 0)
@@ -172,10 +188,21 @@ double TimeFunction::future_bound(double t) {
     compute_future_max();
   }
 
-  // First handle if we are out of the border
-  if (t > last_value_before_border) return border_value;
-  else if (t < t0) return (*future_max)[0];
-  else if (t < 0) return (*future_max)[0];
+  if (t > last_value_before_border) {
+    // First handle if we are out of the border
+    if (border_type != Cyclic) {
+      return border_value;
+    } else {
+      // If border type is cyclic then we simply return the value it would have in the first cycle
+      const double divider = last_value_before_border;
+      const int quotient = static_cast<int>(FLOOR(t / divider));
+      return future_bound(t - quotient * divider);
+    }
+  } else if (t < t0) {
+    return (*future_max)[0];
+  } else if (t < 0) {
+    return (*future_max)[0];
+  }
 
   const ulong i_left = get_index_(t);
 
@@ -293,7 +320,9 @@ double TimeFunction::linear_interpolation(double t_left, double y_left,
   }
 }
 
-double TimeFunction::interpolation(double t_left, double y_left, double t_right, double y_right, double t) {
+double TimeFunction::interpolation(double t_left, double y_left,
+                                   double t_right, double y_right,
+                                   double t) {
   // Second do the right interpolation
   switch (inter_mode) {
     case (InterLinear):return linear_interpolation(t_left, y_left, t_right, y_right, t);

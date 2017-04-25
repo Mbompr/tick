@@ -15,7 +15,8 @@ class TimeFunction {
         typedef enum {
             Border0 = 0,
             BorderConstant,
-            BorderContinue
+            BorderContinue,
+            Cyclic
         } BorderType;
 
     public:
