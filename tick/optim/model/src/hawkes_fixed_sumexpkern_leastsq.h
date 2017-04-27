@@ -14,6 +14,13 @@ class ModelHawkesFixedSumExpKernLeastSq : public ModelHawkesSingle {
   ArrayDouble2dList1D E, Dgg, C;
   ArrayDoubleList1D Dg;
 
+  //! @brief some arrays used for intermediate computings in varying baseline case
+  ArrayDouble L;
+  ArrayDoubleList1D K;
+  ArrayDouble2dList1D Dg_new;
+
+  ulong n_baselines;
+
   //! @brief The array of decays (remember that the decays are fixed!)
   ArrayDouble decays;
 

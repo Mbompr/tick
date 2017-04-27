@@ -6,7 +6,7 @@ ModelHawkesFixedSumExpKernLeastSq::ModelHawkesFixedSumExpKernLeastSq(
     const unsigned int max_n_threads,
     const unsigned int optimization_level)
     : ModelHawkesSingle(max_n_threads, optimization_level),
-      decays(decays), n_decays(decays.size()) {}
+      n_baselines(1), decays(decays), n_decays(decays.size()) {}
 
 // Method that computes the value
 double ModelHawkesFixedSumExpKernLeastSq::loss(const ArrayDouble &coeffs) {
@@ -30,25 +30,31 @@ double ModelHawkesFixedSumExpKernLeastSq::loss_i(const ulong i,
                                                  const ArrayDouble &coeffs) {
   if (!weights_computed) TICK_ERROR("Please compute weights before calling hessian_i");
 
-  double mu_i = coeffs[i];
-  ulong start_alpha_i = n_nodes + i * n_nodes * n_decays;
-  ulong end_alpha_i = n_nodes + (i + 1) * n_nodes * n_decays;
+  ArrayDouble mu_i = view(coeffs, i * n_baselines, (i + 1) * n_baselines);
+  ulong start_alpha_i = n_nodes * n_baselines + i * n_nodes * n_decays;
+  ulong end_alpha_i = n_nodes * n_baselines + (i + 1) * n_nodes * n_decays;
   ArrayDouble alpha_i = view(coeffs, start_alpha_i, end_alpha_i);
 
   double C_sum = 0;
   double Dg_sum = 0;
+  double Dg_new_sum = 0;
   double Dgg_sum = 0;
   double E_sum = 0;
 
   ArrayDouble2d &C_i = C[i];
   for (ulong j = 0; j < n_nodes; ++j) {
     ArrayDouble &Dg_j = Dg[j];
+    ArrayDouble2d &Dg_new_j = Dg_new[j];
     ArrayDouble2d &Dgg_j = Dgg[j];
     ArrayDouble2d &E_j = E[j];
 
     for (ulong u = 0; u < n_decays; ++u) {
       double alpha_i_j_u = alpha_i[j * n_decays + u];
       C_sum += alpha_i_j_u * view_row(C_i, j)[u];
+
+      for (ulong p = 0; p < n_baselines; ++p) {
+        Dg_new_sum += alpha_i_j_u * mu_i[p] * Dg_new_j[u * n_baselines + p];
+      }
       Dg_sum += alpha_i_j_u * Dg_j[u];
 
       for (ulong u1 = 0; u1 < n_decays; ++u1) {
@@ -63,12 +69,20 @@ double ModelHawkesFixedSumExpKernLeastSq::loss_i(const ulong i,
     }
   }
 
-  double A_i = mu_i * mu_i * end_time;
-  A_i += 2 * mu_i * Dg_sum;
+  double A_i = 0;
+  double B_i = 0;
+  ArrayDouble &K_i = K[i];
+
+  for (ulong p = 0; p < n_baselines; ++p) {
+    A_i += mu_i[p] * mu_i[p] * L[p];
+    B_i += mu_i[p] * K_i[p];
+  }
+
+  A_i += 2 * Dg_new_sum;
+//  A_i += 2 * mu_i * Dg_sum;
   A_i += Dgg_sum;
   A_i += 2 * E_sum;
 
-  double B_i = mu_i * (*n_jumps_per_node)[i];
   B_i += C_sum;
 
   return A_i - 2 * B_i;
@@ -150,6 +164,11 @@ double ModelHawkesFixedSumExpKernLeastSq::loss_and_grad(const ArrayDouble &coeff
 // Contribution of the ith component to the initialization
 // Computation of the arrays H, Dg, Dg2 and C
 void ModelHawkesFixedSumExpKernLeastSq::compute_weights_i(const ulong i) {
+  for (ulong p = 0; p < n_baselines; ++p) {
+    if (p % n_nodes == i)
+      L[p] = end_time;
+  }
+
   ulong n_decays = decays.size();
 
   ArrayDouble &timestamps_i = *timestamps[i];
@@ -160,12 +179,18 @@ void ModelHawkesFixedSumExpKernLeastSq::compute_weights_i(const ulong i) {
 
   ArrayDouble2d &C_i = C[i];
   ArrayDouble &Dg_i = Dg[i];
+  ArrayDouble2d &Dg_new_i = Dg_new[i];
   ArrayDouble2d &Dgg_i = Dgg[i];
   ArrayDouble2d &E_i = E[i];
+  ArrayDouble &K_i = K[i];
 
   ulong N_i = timestamps_i.size();
   for (ulong k = 0; k < N_i; ++k) {
     double t_k_i = timestamps_i[k];
+
+    for (ulong p = 0; p < n_baselines; ++p) {
+      K_i[p] = N_i;
+    }
 
     for (ulong j = 0; j < n_nodes; ++j) {
       ArrayDouble &timestamps_j = *timestamps[j];
@@ -209,6 +234,9 @@ void ModelHawkesFixedSumExpKernLeastSq::compute_weights_i(const ulong i) {
     for (ulong u = 0; u < n_decays; ++u) {
       double decay_u = decays[u];
       Dg_i[u] += 1 - cexp(-decay_u * (end_time - t_k_i));
+      for (int p = 0; p < n_baselines; ++p) {
+        Dg_new_i[u * n_baselines + p] += 1 - cexp(-decay_u * (end_time - t_k_i));
+      }
 
       for (ulong u1 = 0; u1 < n_decays; ++u1) {
         double decay_u1 = decays[u1];
@@ -225,19 +253,28 @@ void ModelHawkesFixedSumExpKernLeastSq::allocate_weights() {
     TICK_ERROR("Please provide valid timestamps before allocating weights")
   }
 
+  L = ArrayDouble(n_baselines);
+  L.init_to_zero();
+
   C = ArrayDouble2dList1D(n_nodes);
   Dg = ArrayDoubleList1D(n_nodes);
   Dgg = ArrayDouble2dList1D(n_nodes);
   E = ArrayDouble2dList1D(n_nodes);
+  Dg_new = ArrayDouble2dList1D(n_nodes);
+  K = ArrayDoubleList1D(n_nodes);
   for (ulong i = 0; i < n_nodes; ++i) {
     C[i] = ArrayDouble2d(n_nodes, n_decays);
     C[i].init_to_zero();
     Dg[i] = ArrayDouble(n_decays);
     Dg[i].init_to_zero();
+    Dg_new[i] = ArrayDouble2d(n_decays, n_baselines);
+    Dg_new[i].init_to_zero();
     Dgg[i] = ArrayDouble2d(n_decays, n_decays);
     Dgg[i].init_to_zero();
     E[i] = ArrayDouble2d(n_nodes, n_decays * n_decays);
     E[i].init_to_zero();
+    K[i] = ArrayDouble(n_baselines);
+    K[i].init_to_zero();
   }
 }
 

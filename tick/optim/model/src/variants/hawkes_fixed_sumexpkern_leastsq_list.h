@@ -15,6 +15,13 @@ class ModelHawkesFixedSumExpKernLeastSqList : public ModelHawkesLeastSqList {
   std::vector<ArrayDouble2d> E, Dgg, C;
   std::vector<ArrayDouble> Dg;
 
+  //! @brief some arrays used for intermediate computings in varying baseline case
+  ArrayDouble L;
+  ArrayDoubleList1D K;
+  ArrayDouble2dList1D Dg_new;
+
+  ulong n_baselines;
+
   //! @brief The array of decays (remember that the decays are fixed!)
   ArrayDouble decays;
 
