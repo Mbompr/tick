@@ -127,5 +127,5 @@ void ModelHawkesFixedSumExpKernLeastSqList::synchronize_aggregated_model() {
 }
 
 ulong ModelHawkesFixedSumExpKernLeastSqList::get_n_coeffs() const {
-  return n_nodes + n_nodes * n_nodes * n_decays;
+  return n_nodes * n_baselines + n_nodes * n_nodes * n_decays;
 }

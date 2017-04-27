@@ -101,6 +101,11 @@ class ModelHawkesFixedSumExpKernLeastSq : public ModelHawkesSingle {
    */
   void compute_weights_i(const ulong i);
 
+  ulong get_baseline_interval(double t);
+  double get_baseline_interval_length(ulong p);
+  ArrayDouble get_baseline_interval_lower_bounds(ulong p);
+  ArrayDouble get_baseline_interval_upper_bounds(ulong p);
+
   friend class ModelHawkesFixedSumExpKernLeastSqList;
 };
 

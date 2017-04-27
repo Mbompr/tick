@@ -76,3 +76,27 @@ def hawkes_sumexp_kernel_intensities(baseline, decays, adjacency, timestamps):
         )
 
     return intensities
+
+
+def hawkes_sumexp_kernel_varying_intensities(baseline, decays, adjacency,
+                                             timestamps):
+    # in this case baseline is a function of time
+    dim = len(timestamps)
+
+    kernels = {}
+    for i in range(dim):
+        kernels[i] = {}
+        for j in range(dim):
+            kernels[i][j] = lambda t, i=i, j=j: \
+                sum([alpha * beta * np.exp(- beta * t)
+                     for alpha, beta in zip(adjacency[i, j], decays)]
+                    )
+
+    intensities = {}
+    for i in range(dim):
+        intensities[i] = lambda x, i=i: baseline[i](x) + sum(
+            [sum(kernels[i][j](x - timestamps[j][timestamps[j] < x]))
+             for j in range(dim)]
+        )
+
+    return intensities
