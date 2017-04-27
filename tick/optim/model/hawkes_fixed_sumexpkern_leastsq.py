@@ -82,7 +82,8 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
         }
     }
 
-    def __init__(self, decays: np.ndarray, approx: int = 0, n_threads: int = 1):
+    def __init__(self, decays: np.ndarray, n_baselines=1, approx: int = 0,
+                 n_threads: int = 1):
         ModelHawkes.__init__(self, approx=approx, n_threads=n_threads)
         self._end_times = None
 
@@ -91,9 +92,10 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
         elif decays.dtype != float:
             decays = decays.astype(float)
         self.decays = decays.copy()
+        self.n_baselines = n_baselines
 
         self._model = _ModelHawkesFixedSumExpKernLeastSqList(
-            self.decays, self.n_threads, self.approx
+            self.decays, self.n_baselines, self.n_threads, self.approx
         )
 
     @property

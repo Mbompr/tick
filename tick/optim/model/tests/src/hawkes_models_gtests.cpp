@@ -101,7 +101,7 @@ TEST_F(HawkesModelTest, compute_loss_least_square_sum_exp_kern){
   ArrayDouble decays(2);
   decays.fill(2);
 
-  ModelHawkesFixedSumExpKernLeastSq model(decays, 2);
+  ModelHawkesFixedSumExpKernLeastSq model(decays, 1, 2);
   model.set_data(timestamps, 5.65);
   model.compute_weights();
 
@@ -145,7 +145,7 @@ TEST_F(HawkesModelTest, compute_loss_least_square_sum_exp_list){
   ArrayDouble decays(2);
   decays.fill(2);
 
-  ModelHawkesFixedSumExpKernLeastSqList model(decays, 2);
+  ModelHawkesFixedSumExpKernLeastSqList model(decays, 1, 2);
   model.incremental_set_data(timestamps, 5.65);
   model.incremental_set_data(timestamps, 5.87);
 

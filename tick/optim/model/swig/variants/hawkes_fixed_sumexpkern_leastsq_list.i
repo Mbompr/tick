@@ -9,6 +9,7 @@ class ModelHawkesFixedSumExpKernLeastSqList : public ModelHawkesLeastSqList {
 public:
     
   ModelHawkesFixedSumExpKernLeastSqList(const ArrayDouble &decays,
+                                        const ulong n_baselines,
                                         const unsigned int max_n_threads = 1,
                                         const unsigned int optimization_level = 0);
 

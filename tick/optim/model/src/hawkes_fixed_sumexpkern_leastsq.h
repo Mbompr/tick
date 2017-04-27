@@ -40,6 +40,7 @@ class ModelHawkesFixedSumExpKernLeastSq : public ModelHawkesSingle {
   //! \param optimization_level : 0 corresponds to no optimization and 1 to use of faster
   //! (approximated) exponential function
   ModelHawkesFixedSumExpKernLeastSq(const ArrayDouble &decays,
+                                    const ulong n_baselines,
                                     const unsigned int max_n_threads = 1,
                                     const unsigned int optimization_level = 0);
 

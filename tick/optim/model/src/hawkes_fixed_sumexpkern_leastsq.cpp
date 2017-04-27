@@ -3,10 +3,11 @@
 
 ModelHawkesFixedSumExpKernLeastSq::ModelHawkesFixedSumExpKernLeastSq(
     const ArrayDouble &decays,
+    const ulong n_baselines,
     const unsigned int max_n_threads,
     const unsigned int optimization_level)
     : ModelHawkesSingle(max_n_threads, optimization_level),
-      n_baselines(1), decays(decays), n_decays(decays.size()) {}
+      n_baselines(n_baselines), decays(decays), n_decays(decays.size()) {}
 
 // Method that computes the value
 double ModelHawkesFixedSumExpKernLeastSq::loss(const ArrayDouble &coeffs) {

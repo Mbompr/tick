@@ -35,6 +35,7 @@ class ModelHawkesFixedSumExpKernLeastSqList : public ModelHawkesLeastSqList {
   //! \param n_cores : number of cores to be used for multithreading
   //! \param optimization_level : 0 corresponds to no optimization and 1 to use of faster (approximated) exponential function
   ModelHawkesFixedSumExpKernLeastSqList(const ArrayDouble &decays,
+                                        const ulong n_baselines,
                                         const unsigned int max_n_threads = 1,
                                         const unsigned int optimization_level = 0);
 
