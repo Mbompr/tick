@@ -217,13 +217,12 @@ class SimuHawkes(SimuPointProcess):
             if len(baseline.shape) > 1:
                 ValueError('Baseline element might have at most 1 dimension')
             n_itervals = len(baseline)
-            t_values = np.linspace(0, self.period_length, n_itervals + 1)[:-1]
-            print(t_values)
-            print(baseline)
-            print('-----')
-            self._pp.set_baseline(i, TimeFunction((t_values, baseline),
-                                                  inter_mode=TimeFunction.InterConstRight,
-                                                  border_type=TimeFunction.Cyclic)._time_function)
+            # We need to append one value as it will be used through
+            # tick.base.TimeFunction with InterConstRight with does not take
+            # into account the last value (expect for t = period_length)
+            t_values = np.linspace(0, self.period_length, n_itervals + 1)
+            extended_baseline = np.hstack((baseline, baseline[-1]))
+            self._pp.set_baseline(i, t_values, extended_baseline)
         elif isinstance(baseline, TimeFunction):
             self._pp.set_baseline(i, baseline._time_function)
         else:
