@@ -102,6 +102,8 @@ void ModelHawkesFixedSumExpKernLeastSqList::synchronize_aggregated_model() {
 
   casted_model->n_nodes = n_nodes;
   casted_model->n_decays = n_decays;
+  casted_model->n_baselines = n_baselines;
+  casted_model->period_length = period_length;
   casted_model->max_n_threads = max_n_threads;
 
   casted_model->L = view(L);
@@ -130,4 +132,22 @@ void ModelHawkesFixedSumExpKernLeastSqList::synchronize_aggregated_model() {
 
 ulong ModelHawkesFixedSumExpKernLeastSqList::get_n_coeffs() const {
   return n_nodes * n_baselines + n_nodes * n_nodes * n_decays;
+}
+
+ulong ModelHawkesFixedSumExpKernLeastSqList::get_n_baselines() const {
+  return n_baselines;
+}
+
+void ModelHawkesFixedSumExpKernLeastSqList::set_n_baselines(ulong n_baselines) {
+  this->n_baselines = n_baselines;
+  weights_computed = false;
+}
+
+double ModelHawkesFixedSumExpKernLeastSqList::get_period_length() const {
+  return period_length;
+}
+
+void ModelHawkesFixedSumExpKernLeastSqList::set_period_length(double period_length) {
+  this->period_length = period_length;
+  weights_computed = false;
 }

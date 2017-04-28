@@ -94,6 +94,12 @@ class ModelHawkesFixedSumExpKernLeastSq : public ModelHawkesSingle {
   //! @brief Synchronize n_coeffs given other attributes
   ulong get_n_coeffs() const override;
 
+  ulong get_n_baselines() const;
+  double get_period_length() const;
+
+  void set_n_baselines(ulong n_baselines);
+  void set_period_length(double period_length);
+
  private:
   void allocate_weights();
 

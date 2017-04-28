@@ -173,6 +173,23 @@ class Test(unittest.TestCase):
                                model.loss(coeffs),
                                places=2)
 
+    def test_model_hawkes_varying_baseline_least_sq_grad(self):
+        """...Test that ModelHawkesFixedExpKernLeastSq gradient is consistent
+        with loss
+        """
+        for model in [self.model, self.model_list]:
+            model.period_length = 1.
+            model.n_baselines = 3
+            coeffs = np.random.rand(model.n_coeffs)
+
+            self.assertLess(check_grad(model.loss, model.grad, coeffs),
+                            1e-5)
+
+            coeffs_min = fmin_bfgs(model.loss, coeffs,
+                                   fprime=model.grad, disp=False)
+
+            self.assertAlmostEqual(norm(model.grad(coeffs_min)),
+                                   .0, delta=1e-4)
 
 if __name__ == "__main__":
     unittest.main()

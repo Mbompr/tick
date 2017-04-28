@@ -349,3 +349,21 @@ double ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval_length(const ulo
                                        full_interval_length);
   return n_full_periods * full_interval_length + extra_period;
 }
+
+ulong ModelHawkesFixedSumExpKernLeastSq::get_n_baselines() const {
+  return n_baselines;
+}
+
+void ModelHawkesFixedSumExpKernLeastSq::set_n_baselines(ulong n_baselines) {
+  this->n_baselines = n_baselines;
+  weights_computed = false;
+}
+
+double ModelHawkesFixedSumExpKernLeastSq::get_period_length() const {
+  return period_length;
+}
+
+void ModelHawkesFixedSumExpKernLeastSq::set_period_length(double period_length) {
+  this->period_length = period_length;
+  weights_computed = false;
+}

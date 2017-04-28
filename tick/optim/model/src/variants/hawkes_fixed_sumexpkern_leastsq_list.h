@@ -52,6 +52,12 @@ class ModelHawkesFixedSumExpKernLeastSqList : public ModelHawkesLeastSqList {
 
   ulong get_n_decays() const { return n_decays; }
 
+  ulong get_n_baselines() const;
+  double get_period_length() const;
+
+  void set_n_baselines(ulong n_baselines);
+  void set_period_length(double period_length);
+
  private:
   /**
    * @brief Compute weights for one index between 0 and n_realizations * n_nodes

@@ -79,7 +79,14 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
         "decays": {
             "writable": True,
             "cpp_setter": "set_decays"
-        }
+        },
+        "n_baselines": {
+            "writable": True,
+            "cpp_setter": "set_n_baselines"
+        },
+        "_period_length": {
+            "writable": False,
+        },
     }
 
     def __init__(self, decays: np.ndarray, n_baselines=1, period_length=None,
@@ -94,14 +101,10 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
         self.decays = decays.copy()
         self.n_baselines = n_baselines
         self.period_length = period_length
-        if period_length is None:
-            period_length = sys.float_info.max
-        else:
-            print(period_length)
 
         self._model = _ModelHawkesFixedSumExpKernLeastSqList(
-            self.decays, self.n_baselines, period_length, self.n_threads,
-            self.approx
+            self.decays, self.n_baselines, self.cast_period_length(),
+            self.n_threads, self.approx
         )
 
     @property
@@ -119,3 +122,19 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
         # This allows to obtain the range of the random sampling when
         # using a stochastic optimization algorithm
         return self.n_nodes
+
+    @property
+    def period_length(self):
+        return self._period_length
+
+    @period_length.setter
+    def period_length(self, val):
+        self._set("_period_length", val)
+        if hasattr(self, '_model') and self._model is not None:
+            self._model.set_period_length(self.cast_period_length())
+
+    def cast_period_length(self):
+        if self.period_length is None:
+            return sys.float_info.max
+        else:
+            return self.period_length

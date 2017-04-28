@@ -24,4 +24,10 @@ class ModelHawkesFixedSumExpKernLeastSq : public Model {
   ulong get_n_total_jumps() const;
   ulong get_n_coeffs() const;
   ulong get_n_nodes() const;
+
+  ulong get_n_baselines() const;
+  double get_period_length() const;
+
+  void set_n_baselines(ulong n_baselines);
+  void set_period_length(double period_length);
 };
