@@ -243,16 +243,14 @@ void ModelHawkesFixedSumExpKernLeastSq::compute_weights_i(const ulong i) {
       Dg_i[u] += 1 - cexp(-decay_u * (end_time - t_k_i));
       ArrayDouble Dg_new_i_u = view_row(Dg_new_i, u);
       for (ulong p = 0; p < n_baselines; ++p) {
-        ArrayDouble lower_bounds = get_baseline_interval_lower_bounds(p);
-        ArrayDouble upper_bounds = get_baseline_interval_upper_bounds(p);
-        const ulong n_intervals = lower_bounds.size();
-        if (n_intervals != upper_bounds.size()) TICK_ERROR(
-            "lower bounds and upper bounds should have the same size");
-        for (int q = 0; q < n_intervals; ++q) {
-          const double lower = std::max(t_k_i, lower_bounds[q]);
-          const double upper = std::min(end_time, upper_bounds[q]);
-          if (lower < upper)
-            Dg_new_i_u[p] += cexp(-decay_u * (lower - t_k_i)) - cexp(-decay_u * (upper - t_k_i));
+        ulong n_passed_periods = static_cast<ulong>(std::floor(t_k_i / period_length));
+        double lower = n_passed_periods * period_length + (p * period_length) / n_baselines;
+        while (lower < end_time) {
+          double lb = std::max(t_k_i, lower);
+          double upper = std::min(lower + period_length / n_baselines, end_time);
+          if (lb < upper)
+            Dg_new_i_u[p] += cexp(-decay_u * (lb - t_k_i)) - cexp(-decay_u * (upper - t_k_i));
+          lower += period_length;
         }
       }
       for (ulong u1 = 0; u1 < n_decays; ++u1) {
