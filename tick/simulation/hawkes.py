@@ -33,11 +33,19 @@ class SimuHawkes(SimuPointProcess):
     kernels : `np.ndarray`, shape=(n_nodes, n_nodes)
         A 2-dimensional arrays of kernels, also noted :math:`\phi_{ij}`
 
-    baseline : `np.ndarray`, shape=(n_nodes, )
-        The baseline of all intensities, also noted :math:`\mu(t)`
-        It might be either an array of numbers for constant baselines or an 
-        array of `tick.base.TimeFunction`  for time varying baseline or tuple 
-        of `(t_values, y_values)` for piecewise constant baselines. 
+    baseline : `np.ndarray` or `list`
+        The baseline of all intensities, also noted :math:`\mu(t)`. It might 
+        be three different types:
+        
+        * `np.ndarray`, shape=(n_nodes,) : One baseline per node is given. 
+          Hence baseline is assumed to be constant, ie. 
+          :math:`\mu_i(t) = \mu_i`
+        * `np.ndarray`, shape=(n_nodes, n_itervals) : `n_intervals` baselines 
+          are given per node. This assumes parameter `period_length` is also 
+          given. In this case baseline is piecewise constant on intervals of 
+          size `period_length / n_intervals` and periodic.
+        * `list` of `tick.base.TimeFunction`, shape=(n_nodes,) : One function 
+          is given per node, ie :math:`\mu_i(t)` is explicitely given.
 
     n_nodes : `int`
         The number of nodes of the Hawkes process. If kernels and baseline
@@ -46,6 +54,9 @@ class SimuHawkes(SimuPointProcess):
 
     end_time : `float`, default=None
         Time until which this point process will be simulated
+        
+    period_length : `float`, default=None
+        Period of baseline in piecewise constant case. 
 
     max_jumps : `int`, default=None
         Simulation will stop if this number of jumps in reached
@@ -90,7 +101,8 @@ class SimuHawkes(SimuPointProcess):
     }
 
     def __init__(self, kernels=None, baseline=None, n_nodes=None,
-                 end_time=None, max_jumps=None, seed=None, verbose=True,
+                 end_time=None, period_length=None,
+                 max_jumps=None, seed=None, verbose=True,
                  force_simulation=False):
         SimuPointProcess.__init__(self, end_time=end_time, max_jumps=max_jumps,
                                   seed=seed, verbose=verbose)
@@ -98,22 +110,13 @@ class SimuHawkes(SimuPointProcess):
         self.force_simulation = force_simulation
         # We keep a reference on this kernel to avoid copies
         self._kernel_0 = HawkesKernel0()
+        self.period_length = period_length
 
         if isinstance(kernels, list):
             kernels = np.array(kernels)
 
         if isinstance(baseline, list):
-            if isinstance(baseline[0], tuple):
-                # This loop is necessary, otherwise tuples are converted to
-                # np.ndarray
-                array_baseline = np.empty((len(baseline)), dtype=object)
-                for i, b_tuple in enumerate(baseline):
-                    t_values, y_values = b_tuple
-                    array_baseline[i] = (np.asarray(t_values, dtype=float),
-                                         np.asarray(y_values, dtype=float))
-                baseline = array_baseline
-            else:
-                baseline = np.asarray(baseline)
+            baseline = np.asarray(baseline)
 
         if baseline is not None:
             if baseline.dtype not in [float, object]:
@@ -143,9 +146,13 @@ class SimuHawkes(SimuPointProcess):
             self._init_zero_kernels()
 
         if baseline is not None:
-            if baseline.shape != (self.n_nodes,):
-                raise ValueError("baseline shape should be %s instead of %s" %
-                                 ((self.n_nodes,), baseline.shape))
+            if baseline.shape[0] != self.n_nodes:
+                raise ValueError("baseline length should be {} instead of {}"
+                                 .format(self.n_nodes, baseline.shape[0]))
+            if len(baseline.shape) > 2:
+                raise ValueError("baseline should have at most {} dimensions, "
+                                 "it currently has"
+                                 .format(2, len(baseline.shape)))
             self.baseline = baseline
             self._init_baseline()
 
@@ -206,12 +213,17 @@ class SimuHawkes(SimuPointProcess):
                     'tuple of 2 np.ndarray or a TimeFunction'
         if isinstance(baseline, (float, int)):
             self._pp.set_baseline(i, baseline)
-        elif isinstance(baseline, tuple):
-            if len(baseline) != 2:
-                ValueError(error_msg)
-            t_values = baseline[0]
-            y_values = baseline[1]
-            self._pp.set_baseline(i, t_values, y_values)
+        elif isinstance(baseline, np.ndarray):
+            if len(baseline.shape) > 1:
+                ValueError('Baseline element might have at most 1 dimension')
+            n_itervals = len(baseline)
+            t_values = np.linspace(0, self.period_length, n_itervals + 1)[:-1]
+            print(t_values)
+            print(baseline)
+            print('-----')
+            self._pp.set_baseline(i, TimeFunction((t_values, baseline),
+                                                  inter_mode=TimeFunction.InterConstRight,
+                                                  border_type=TimeFunction.Cyclic)._time_function)
         elif isinstance(baseline, TimeFunction):
             self._pp.set_baseline(i, baseline._time_function)
         else:

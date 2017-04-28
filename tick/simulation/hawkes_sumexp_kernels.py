@@ -96,7 +96,8 @@ class SimuHawkesSumExpKernels(SimuHawkes):
         return self.decays.shape[0]
 
     def __init__(self, adjacency, decays, baseline=None,
-                 end_time=None, max_jumps=None, seed=None, verbose=True,
+                 end_time=None, period_length=None, max_jumps=None,
+                 seed=None, verbose=True,
                  force_simulation=False):
 
         if isinstance(adjacency, list):
@@ -119,8 +120,8 @@ class SimuHawkesSumExpKernels(SimuHawkes):
         kernels = self._build_sumexp_kernels()
 
         SimuHawkes.__init__(self, kernels=kernels, baseline=baseline,
-                            end_time=end_time, max_jumps=max_jumps,
-                            seed=seed, verbose=verbose,
+                            end_time=end_time, period_length=period_length,
+                            max_jumps=max_jumps, seed=seed, verbose=verbose,
                             force_simulation=force_simulation)
 
     def _build_sumexp_kernels(self):

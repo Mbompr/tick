@@ -62,11 +62,10 @@ class Test(unittest.TestCase):
     def test_hawkes_set_baseline_piecewiseconstant(self):
         """...Test Hawkes process baseline set with time and value arrays
         """
-        t_values = [0.5, 1., 2., 3.5]
-        y_values_1 = [1., 2., 1.5, 4.]
-        y_values_2 = [2., 1.5, 4., 1.]
-        hawkes = SimuHawkes(baseline=[(t_values, y_values_1),
-                                      (t_values, y_values_2)],
+        # t_values = [0.5, 1., 2., 3.5]
+        baselines = [[1., 2., 1.5, 4.],
+                     [2., 1.5, 4., 1.]]
+        hawkes = SimuHawkes(baseline=baselines, period_length=3.5,
                             kernels=self.kernels, verbose=False)
 
         hawkes.end_time = 10
