@@ -20,6 +20,7 @@ class ModelHawkesFixedSumExpKernLeastSq : public ModelHawkesSingle {
   ArrayDouble2dList1D Dg_new;
 
   ulong n_baselines;
+  double period_length;
 
   //! @brief The array of decays (remember that the decays are fixed!)
   ArrayDouble decays;
@@ -41,6 +42,7 @@ class ModelHawkesFixedSumExpKernLeastSq : public ModelHawkesSingle {
   //! (approximated) exponential function
   ModelHawkesFixedSumExpKernLeastSq(const ArrayDouble &decays,
                                     const ulong n_baselines,
+                                    const double period_length,
                                     const unsigned int max_n_threads = 1,
                                     const unsigned int optimization_level = 0);
 
@@ -101,10 +103,10 @@ class ModelHawkesFixedSumExpKernLeastSq : public ModelHawkesSingle {
    */
   void compute_weights_i(const ulong i);
 
-  ulong get_baseline_interval(double t);
-  double get_baseline_interval_length(ulong p);
-  ArrayDouble get_baseline_interval_lower_bounds(ulong p);
-  ArrayDouble get_baseline_interval_upper_bounds(ulong p);
+  ulong get_baseline_interval(const double t);
+  double get_baseline_interval_length(const ulong p);
+  ArrayDouble get_baseline_interval_lower_bounds(const ulong p);
+  ArrayDouble get_baseline_interval_upper_bounds(const ulong p);
 
   friend class ModelHawkesFixedSumExpKernLeastSqList;
 };

@@ -143,11 +143,14 @@ class Test(unittest.TestCase):
         end_time = self.model.end_times[self.realization]
 
         n_baselines = 3
+        period_length = 1.
         baselines = np.random.rand(self.dim, n_baselines)
 
         def baseline_function(i):
             def baseline_value(t):
-                interval = min(int(t * n_baselines / end_time), n_baselines - 1)
+                first_t = t - period_length * int(t / period_length)
+                interval = min(int(first_t / period_length * n_baselines),
+                               n_baselines - 1)
                 return baselines[i, interval]
             return baseline_value
 
@@ -161,7 +164,8 @@ class Test(unittest.TestCase):
         integral_approx /= self.model.n_jumps
 
         model = ModelHawkesFixedSumExpKernLeastSq(decays=self.decays,
-                                                  n_baselines=n_baselines)
+                                                  n_baselines=n_baselines,
+                                                  period_length=period_length)
         model.fit(self.timestamps_list[self.realization])
 
         coeffs = np.hstack((baselines.ravel(), self.adjacency.ravel()))

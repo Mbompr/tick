@@ -1,9 +1,9 @@
 import numpy as np
+import sys
 
 from tick.optim.model.base import ModelHawkes, LOSS_AND_GRAD
 from .build.model import ModelHawkesFixedSumExpKernLeastSqList as \
     _ModelHawkesFixedSumExpKernLeastSqList
-
 
 class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
     """Hawkes process learner for sum-exponential kernels with fixed and given
@@ -82,8 +82,8 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
         }
     }
 
-    def __init__(self, decays: np.ndarray, n_baselines=1, approx: int = 0,
-                 n_threads: int = 1):
+    def __init__(self, decays: np.ndarray, n_baselines=1, period_length=None,
+                 approx: int = 0, n_threads: int = 1):
         ModelHawkes.__init__(self, approx=approx, n_threads=n_threads)
         self._end_times = None
 
@@ -93,9 +93,15 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
             decays = decays.astype(float)
         self.decays = decays.copy()
         self.n_baselines = n_baselines
+        self.period_length = period_length
+        if period_length is None:
+            period_length = sys.float_info.max
+        else:
+            print(period_length)
 
         self._model = _ModelHawkesFixedSumExpKernLeastSqList(
-            self.decays, self.n_baselines, self.n_threads, self.approx
+            self.decays, self.n_baselines, period_length, self.n_threads,
+            self.approx
         )
 
     @property

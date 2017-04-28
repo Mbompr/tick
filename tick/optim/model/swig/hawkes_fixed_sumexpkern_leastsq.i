@@ -11,6 +11,7 @@ class ModelHawkesFixedSumExpKernLeastSq : public Model {
 
   ModelHawkesFixedSumExpKernLeastSq(const ArrayDouble &decays,
                                     const ulong n_baselines,
+                                    const double period_length,
                                     const unsigned int max_n_threads = 1,
                                     const unsigned int optimization_level = 0);
 

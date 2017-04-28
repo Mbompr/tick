@@ -4,10 +4,12 @@
 ModelHawkesFixedSumExpKernLeastSq::ModelHawkesFixedSumExpKernLeastSq(
     const ArrayDouble &decays,
     const ulong n_baselines,
+    const double period_length,
     const unsigned int max_n_threads,
     const unsigned int optimization_level)
     : ModelHawkesSingle(max_n_threads, optimization_level),
-      n_baselines(n_baselines), decays(decays), n_decays(decays.size()) {}
+      n_baselines(n_baselines), period_length(period_length),
+      decays(decays), n_decays(decays.size()) {}
 
 // Method that computes the value
 double ModelHawkesFixedSumExpKernLeastSq::loss(const ArrayDouble &coeffs) {
@@ -107,20 +109,25 @@ void ModelHawkesFixedSumExpKernLeastSq::grad_i(const ulong i,
                                                ArrayDouble &out) {
   if (!weights_computed) TICK_ERROR("Please compute weights before calling hessian_i");
 
-  double mu_i = coeffs[i];
-  ulong start_alpha_i = n_nodes + i * n_nodes * n_decays;
-  ulong end_alpha_i = n_nodes + (i + 1) * n_nodes * n_decays;
+  ArrayDouble mu_i = view(coeffs, i * n_baselines, (i + 1) * n_baselines);
+  ulong start_alpha_i = n_nodes * n_baselines + i * n_nodes * n_decays;
+  ulong end_alpha_i = n_nodes * n_baselines + (i + 1) * n_nodes * n_decays;
   ArrayDouble alpha_i = view(coeffs, start_alpha_i, end_alpha_i);
 
-  double &grad_mu_i = out[i];
+  ArrayDouble grad_mu_i = view(out, i * n_baselines, (i + 1) * n_baselines);
   ArrayDouble grad_alpha_i = view(out, start_alpha_i, end_alpha_i);
   grad_alpha_i.init_to_zero();
 
-  grad_mu_i = 2 * mu_i * end_time - 2 * (*n_jumps_per_node)[i];
+//  grad_mu_i = 2 * mu_i * end_time - 2 * (*n_jumps_per_node)[i];
+  ArrayDouble &K_i = K[i];
+  for (ulong p = 0; p < n_baselines; ++p) {
+    grad_mu_i[p] = 2 * mu_i[p] * L[p] - 2 * K_i[p];
+
+  }
 
   ArrayDouble2d &C_i = C[i];
   for (ulong j = 0; j < n_nodes; ++j) {
-    ArrayDouble &Dg_j = Dg[j];
+    ArrayDouble2d &Dg_new_j = Dg_new[j];
     ArrayDouble2d &Dgg_j = Dgg[j];
     ArrayDouble2d &E_j = E[j];
 
@@ -129,8 +136,11 @@ void ModelHawkesFixedSumExpKernLeastSq::grad_i(const ulong i,
       double &grad_alpha_i_j_u = grad_alpha_i[j * n_decays + u];
 
       grad_alpha_i_j_u -= 2 * view_row(C_i, j)[u];
-      grad_mu_i += 2 * alpha_i_j_u * Dg_j[u];
-      grad_alpha_i_j_u += 2 * mu_i * Dg_j[u];
+
+      for (ulong p = 0; p < n_baselines; ++p) {
+        grad_mu_i[p] += 2 * alpha_i_j_u * Dg_new_j[u * n_baselines + p];
+        grad_alpha_i_j_u += 2 * mu_i[p] * Dg_new_j[u * n_baselines + p];
+      }
 
       for (ulong u1 = 0; u1 < n_decays; ++u1) {
         double alpha_i_j_u1 = alpha_i[j * n_decays + u1];
@@ -162,6 +172,7 @@ double ModelHawkesFixedSumExpKernLeastSq::loss_and_grad(const ArrayDouble &coeff
 // Computation of the arrays H, Dg, Dg2 and C
 void ModelHawkesFixedSumExpKernLeastSq::compute_weights_i(const ulong i) {
   for (ulong p = 0; p < n_baselines; ++p) {
+    // dispatch interval length computation among threads
     if (p % n_nodes == i)
       L[p] = get_baseline_interval_length(p);
   }
@@ -300,18 +311,41 @@ ulong ModelHawkesFixedSumExpKernLeastSq::get_n_coeffs() const {
   return n_nodes * n_baselines + n_nodes * n_nodes * n_decays;
 }
 
-ulong ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval(double t) {
-  if (t == end_time) return n_baselines - 1;
-  return static_cast<ulong>(std::floor(t / end_time * n_baselines));
+ulong ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval(const double t) {
+  double first_period_t = t - std::floor(t / period_length) * period_length;
+  // TODO: remove?
+  if (first_period_t == period_length) return n_baselines - 1;
+  return static_cast<ulong>(std::floor(first_period_t / period_length * n_baselines));
 }
 
-ArrayDouble ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval_lower_bounds(ulong p) {
-  return ArrayDouble {p * end_time / n_baselines};
-}
-ArrayDouble ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval_upper_bounds(ulong p) {
-  return ArrayDouble {(p + 1) * end_time / n_baselines};
+ArrayDouble ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval_lower_bounds(
+    const ulong p) {
+  VArrayDouble lower_bounds(0);
+  double lower_bound = (p * period_length) / n_baselines;
+  while (lower_bound < end_time) {
+    lower_bounds.append1(lower_bound);
+    lower_bound += period_length;
+  }
+  return lower_bounds;
 }
 
-double ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval_length(ulong p) {
-  return end_time / n_baselines;
+ArrayDouble ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval_upper_bounds(
+    const ulong p) {
+  VArrayDouble upper_bounds(0);
+  double lower_bound = (p * period_length) / n_baselines;
+  while (lower_bound < end_time) {
+    upper_bounds.append1(std::min(lower_bound + period_length / n_baselines, end_time));
+    lower_bound += period_length;
+  }
+  return upper_bounds;
+}
+
+double ModelHawkesFixedSumExpKernLeastSq::get_baseline_interval_length(const ulong p) {
+  const ulong n_full_periods = static_cast<ulong>(std::floor(end_time / period_length));
+  const double full_interval_length = period_length / n_baselines;
+  const double remaining_time = end_time - n_full_periods * period_length;
+  const double period_start = p * full_interval_length;
+  const double extra_period = std::min(std::max(remaining_time - period_start, 0.),
+                                       full_interval_length);
+  return n_full_periods * full_interval_length + extra_period;
 }

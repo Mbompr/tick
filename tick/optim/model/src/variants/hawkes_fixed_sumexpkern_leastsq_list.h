@@ -21,6 +21,7 @@ class ModelHawkesFixedSumExpKernLeastSqList : public ModelHawkesLeastSqList {
   ArrayDouble2dList1D Dg_new;
 
   ulong n_baselines;
+  double period_length;
 
   //! @brief The array of decays (remember that the decays are fixed!)
   ArrayDouble decays;
@@ -36,6 +37,7 @@ class ModelHawkesFixedSumExpKernLeastSqList : public ModelHawkesLeastSqList {
   //! \param optimization_level : 0 corresponds to no optimization and 1 to use of faster (approximated) exponential function
   ModelHawkesFixedSumExpKernLeastSqList(const ArrayDouble &decays,
                                         const ulong n_baselines,
+                                        const double period_length,
                                         const unsigned int max_n_threads = 1,
                                         const unsigned int optimization_level = 0);
 
