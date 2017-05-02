@@ -19,13 +19,13 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
 
     .. math::
         \\forall i \\in [1 \\dots D], \\quad
-        \\lambda_i(t) = \\mu_i + \\sum_{j=1}^D
+        \\lambda_i(t) = \\mu_i(t) + \\sum_{j=1}^D
         \\sum_{t_k^j < t} \\phi_{ij}(t - t_k^j)
 
     where
 
     * :math:`D` is the number of nodes
-    * :math:`\mu_i` are the baseline intensities
+    * :math:`\mu_i(t)` are the baseline intensities
     * :math:`\phi_{ij}` are the kernels
     * :math:`t_k^j` are the timestamps of all events of node :math:`j`
 
@@ -46,6 +46,16 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
     ----------
     decays : `numpy.ndarray`, shape=(n_decays, )
         An array giving the different decays of the exponentials kernels.
+        
+    n_baselines : `int`, default=1
+        In this model baseline is supposed to be either constant or piecewise 
+        constant. If `n_baseline > 1` then piecewise constant setting is 
+        enabled. In this case :math:`\\mu_i(t)` is piecewise constant on 
+        intervals of size `period_length / n_baselines` and periodic.
+        
+    period_length : `float`, default=None
+        In piecewise constant setting this denotes the period of the 
+        piecewise constant baseline function.
 
     approx : `int`, default=0 (read-only)
         Level of approximation used for computing exponential functions
@@ -93,6 +103,12 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
                  approx: int = 0, n_threads: int = 1):
         ModelHawkes.__init__(self, approx=approx, n_threads=n_threads)
         self._end_times = None
+
+        if n_baselines <= 0:
+            raise ValueError('n_baselines must be positive')
+        if n_baselines > 1 and period_length is None:
+            raise ValueError('period_length must be given if multiple '
+                             'baselines are used')
 
         if isinstance(decays, list):
             decays = np.array(decays, dtype=float)
