@@ -30,6 +30,9 @@ class HawkesTimeFunctionBaseline : public HawkesBaseline {
   //! @brief get value of the baseline at time t
   double get_value(double t) override;
 
+  //! @brief get value of the baseline at time t
+  SArrayDoublePtr get_value(ArrayDouble &t) override;
+
   //! @brief get the future maximum reachable value of the baseline after time t
   double get_future_bound(double t) override;
 

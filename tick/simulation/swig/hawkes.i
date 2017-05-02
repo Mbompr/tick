@@ -14,6 +14,9 @@ class Hawkes : public PP {
   void set_baseline(unsigned int i, double baseline);
   void set_baseline(unsigned int i, ArrayDouble &times, ArrayDouble &values);
   void set_baseline(unsigned int i, TimeFunction time_function);
+
+  SArrayDoublePtr get_baseline(unsigned int i, ArrayDouble &t);
+  double get_baseline(unsigned int i, double t);
 };
 
 TICK_MAKE_PICKLABLE(Hawkes, 0);

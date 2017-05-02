@@ -97,6 +97,20 @@ class Hawkes : public PP {
   */
   void set_baseline(unsigned int i, ArrayDouble &times, ArrayDouble &values);
 
+  /**
+   * @brief Get baseline for a specific dimension at a given time
+   * \param i : the dimension
+   * \param t : considered time
+   */
+  double get_baseline(unsigned int i, double t);
+
+  /**
+   * @brief Get baseline for a specific dimension at a given time
+   * \param i : the dimension
+   * \param t : considered times
+   */
+  SArrayDoublePtr get_baseline(unsigned int i, ArrayDouble &t);
+
  private :
   /**
    * @brief Virtual method called once (at startup) to set the initial
@@ -120,13 +134,6 @@ class Hawkes : public PP {
   virtual bool update_time_shift_(double delay,
                                   ArrayDouble &intensity,
                                   double *total_intensity_bound);
-
-  /**
-   * @brief Get baseline for a specific dimension at a given time
-   * \param i : the dimension
-   * \param t : considered time
-   */
-  double get_baseline(unsigned int i, double t);
 
   /**
    * @brief Get future baseline maximum reachable value for a specific dimension at a given time

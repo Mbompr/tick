@@ -17,6 +17,10 @@ double HawkesTimeFunctionBaseline::get_value(double t) {
   return time_function.value(t);
 }
 
+SArrayDoublePtr HawkesTimeFunctionBaseline::get_value(ArrayDouble &t) {
+  return time_function.value(t);
+}
+
 double HawkesTimeFunctionBaseline::get_future_bound(double t) {
   return time_function.future_bound(t);
 }

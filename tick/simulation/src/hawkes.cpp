@@ -105,6 +105,12 @@ double Hawkes::get_baseline(unsigned int i, double t) {
   return baselines[i]->get_value(t);
 }
 
+SArrayDoublePtr Hawkes::get_baseline(unsigned int i, ArrayDouble &t) {
+  if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
+
+  return baselines[i]->get_value(t);
+}
+
 double Hawkes::get_baseline_bound(unsigned int i, double t) {
   if (i >= n_nodes) TICK_BAD_INDEX(0, n_nodes, i);
 
