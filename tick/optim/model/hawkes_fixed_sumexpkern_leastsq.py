@@ -74,6 +74,9 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
     ----------
     n_nodes : `int` (read-only)
         Number of components, or dimension of the Hawkes model
+        
+    baseline_intervals : `np.ndarray`, shape=(n_baselines)
+        Start time of each interval on which baseline is piecewise constant.
 
     data : `list` of `numpy.array` (read-only)
         The events given to the model through `fit` method.
@@ -116,6 +119,7 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
             decays = decays.astype(float)
         self.decays = decays.copy()
         self.n_baselines = n_baselines
+        self._period_length = None
         self.period_length = period_length
 
         self._model = _ModelHawkesFixedSumExpKernLeastSqList(
@@ -154,3 +158,8 @@ class ModelHawkesFixedSumExpKernLeastSq(ModelHawkes):
             return sys.float_info.max
         else:
             return self.period_length
+
+    @property
+    def baseline_intervals(self):
+        return np.arange(self.n_baselines) * (
+            self.period_length / self.n_baselines)
