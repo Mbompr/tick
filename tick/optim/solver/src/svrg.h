@@ -17,6 +17,7 @@ class SVRG : public StoSolver {
   };
 
  private:
+  int threads = 1;
   double step;
   // Probabilistic correction of the step-sizes of all model weights,
   // given by the inverse proportion of non-zero entries in each feature column
@@ -41,12 +42,20 @@ class SVRG : public StoSolver {
 
   void compute_step_corrections();
 
+  void solve_dense_f (const ulong& next_i);
+  
+  void solve_sparse_f(const ulong& next_i,
+                      const ulong& n_features,
+                      const bool use_intercept,
+                      ProxSeparable* casted_prox);
+
  public:
   SVRG(ulong epoch_size,
        double tol,
        RandType rand_type,
        double step,
        int seed = -1,
+       int threads = 1,
        VarianceReductionMethod variance_reduction = VarianceReductionMethod::Last);
 
   void solve() override;
