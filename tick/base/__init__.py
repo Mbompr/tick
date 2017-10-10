@@ -15,8 +15,9 @@ def _set_mpl_backend():
             (sys.platform == 'darwin'
              and matplotlib.get_backend() == 'MacOSX')
         )
-          or 'DISPLAY' in os.environ
-             and os.environ['DISPLAY'] == '-1'):
+          or ('DISPLAY' in os.environ
+             and os.environ['DISPLAY'] == '-1')
+        ):
         matplotlib.use('Agg')
 
 _set_mpl_backend()

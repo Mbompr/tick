@@ -77,7 +77,7 @@ void SVRG::solve_dense() {
         threadsV.emplace_back([=]() mutable -> void {
           for (ulong t = 0; t < (epoch_size / threads); ++t) {
             ulong next_i(get_next_i());
-            solve_dense_f(next_i);
+            dense_single_thread_solver(next_i);
           }
         });
       }
@@ -88,7 +88,7 @@ void SVRG::solve_dense() {
   } else {
     for (ulong t = 0; t < epoch_size; ++t) {
       ulong next_i = get_next_i();
-      this->solve_dense_f(next_i);
+      dense_single_thread_solver(next_i);
     }
   }
   if (variance_reduction == VarianceReductionMethod::Last) {
@@ -110,13 +110,14 @@ void SVRG::solve_sparse_proba_updates(bool use_intercept, ulong n_features) {
   } else {
     TICK_ERROR("SVRG::solve_sparse_proba_updates can be used with a separable prox only.")
   }
+  ProxSeparable* p_casted_prox = casted_prox.get();
   if(threads > 1) {
       std::vector<std::thread> threadsV;
       for(int i = 0; i < threads; i++){
         threadsV.emplace_back([=]() mutable -> void {
           for (ulong t = 0; t < (epoch_size / threads); ++t) {
             ulong next_i(get_next_i());
-            solve_sparse_f(next_i, n_features, use_intercept, casted_prox.get());
+            sparse_single_thread_solver(next_i, n_features, use_intercept, p_casted_prox);
           }
         });
       }
@@ -125,9 +126,8 @@ void SVRG::solve_sparse_proba_updates(bool use_intercept, ulong n_features) {
       }
   } else {
     for (t = 0; t < epoch_size; ++t) {
-      // Get next sample index
       ulong next_i = get_next_i();
-      this->solve_sparse_f(next_i, n_features, use_intercept, casted_prox.get());
+      sparse_single_thread_solver(next_i, n_features, use_intercept, p_casted_prox);
     }
   }
 
@@ -142,7 +142,7 @@ void SVRG::set_starting_iterate(ArrayDouble &new_iterate) {
   next_iterate = iterate;
 }
 
-void SVRG::solve_dense_f(const ulong& next_i){
+void SVRG::dense_single_thread_solver(const ulong& next_i){
 
     const ulong& i = next_i;
     model->grad_i(i, iterate, grad_i);
@@ -159,10 +159,10 @@ void SVRG::solve_dense_f(const ulong& next_i){
     }
 }
 
-void SVRG::solve_sparse_f(const ulong& next_i,
+void SVRG::sparse_single_thread_solver(const ulong& next_i,
                           const ulong& n_features,
                           const bool use_intercept,
-                          ProxSeparable* casted_prox){
+                          ProxSeparable*& casted_prox){
 
     const ulong& i = next_i;
     // Sparse features vector
@@ -199,5 +199,3 @@ void SVRG::solve_sparse_f(const ulong& next_i,
       next_iterate.mult_incr(iterate, 1.0 / epoch_size);
     }
 }
-
-

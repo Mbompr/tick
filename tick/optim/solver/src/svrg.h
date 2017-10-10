@@ -42,12 +42,18 @@ class SVRG : public StoSolver {
 
   void compute_step_corrections();
 
-  void solve_dense_f (const ulong& next_i);
+  void dense_single_thread_solver (const ulong& next_i);
   
-  void solve_sparse_f(const ulong& next_i,
-                      const ulong& n_features,
-                      const bool use_intercept,
-                      ProxSeparable* casted_prox);
+  // ProxSeparable* is a raw pointer here as the
+  //  ownership of the pointer is handled by 
+  //  a shared_ptr which is above it in the same
+  //  scope so a shared_ptr is not needed
+  void sparse_single_thread_solver(
+      const ulong& next_i,
+      const ulong& n_features,
+      const bool use_intercept,
+      ProxSeparable*& casted_prox
+  );
 
  public:
   SVRG(ulong epoch_size,
