@@ -100,4 +100,8 @@ if(TICK_BUILD_STAGE1_SPIKE)
     tick_linear_model_py linear_model python/src/tick_linear_model_module.cpp
     tick/linear_model/build tick_linear_model tick_base_model
   )
+  tick_pybind_module(
+    tick_prox_py prox python/src/tick_prox_module.cpp tick/prox/build
+    tick_prox
+  )
 endif()
