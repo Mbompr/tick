@@ -1,0 +1,84 @@
+cmake_minimum_required(VERSION 3.24)
+
+project(tick LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+include(GNUInstallDirs)
+
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+find_package(pybind11 CONFIG REQUIRED)
+
+execute_process(
+  COMMAND "${Python_EXECUTABLE}" -c "import numpy; print(numpy.get_include())"
+  OUTPUT_VARIABLE Python_NumPy_INCLUDE_DIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT Python_NumPy_INCLUDE_DIR)
+  message(FATAL_ERROR "Could not determine NumPy include directory")
+endif()
+
+set(TICK_ENABLE_FAST_MATH ON CACHE BOOL "Enable fast math flags")
+set(TICK_BUILD_STAGE1_SPIKE ON CACHE BOOL "Build the pybind11 array/base spike")
+set(TICK_REBUILD_LIBS ON CACHE BOOL "Rebuild the tick libraries via CMake" FORCE)
+set(USE_MKL OFF CACHE BOOL "Force tick to use MKL" FORCE)
+set(USE_BLAS OFF CACHE BOOL "Force tick to use BLAS" FORCE)
+set(BENCHMARK OFF CACHE BOOL "Build C++ benchmarks" FORCE)
+
+if(TICK_ENABLE_FAST_MATH)
+  if(MSVC)
+    add_compile_options(/fp:fast)
+  else()
+    add_compile_options(-ffast-math)
+  endif()
+endif()
+
+add_compile_definitions(
+  PYTHON_LINK
+  TICK_REBUILD_LIBS=ON
+  TICK_SWIG_INCLUDE
+)
+
+if(APPLE)
+  add_compile_definitions(DARWIN)
+endif()
+
+include_directories(
+  "${PROJECT_SOURCE_DIR}/lib/include"
+  "${PROJECT_SOURCE_DIR}/lib/third_party/cereal/include"
+  "${Python_INCLUDE_DIRS}"
+  "${Python_NumPy_INCLUDE_DIR}"
+)
+
+add_subdirectory(lib)
+
+function(tick_pybind_module target_name output_name source_file install_dir)
+  pybind11_add_module(${target_name} MODULE "${source_file}")
+  target_link_libraries(${target_name} PRIVATE tick_array tick_base tick_array_test)
+  target_include_directories(${target_name} PRIVATE
+    "${PROJECT_SOURCE_DIR}/python/src"
+    "${PROJECT_SOURCE_DIR}/lib/include"
+    "${PROJECT_SOURCE_DIR}/lib/third_party/cereal/include"
+    "${Python_INCLUDE_DIRS}"
+    "${Python_NumPy_INCLUDE_DIR}"
+  )
+  set_target_properties(${target_name} PROPERTIES
+    OUTPUT_NAME "${output_name}"
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${install_dir}"
+    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${install_dir}"
+  )
+  install(TARGETS ${target_name}
+    LIBRARY DESTINATION "${install_dir}"
+    RUNTIME DESTINATION "${install_dir}"
+  )
+endfunction()
+
+if(TICK_BUILD_STAGE1_SPIKE)
+  tick_pybind_module(tick_array_py array python/src/tick_array_module.cpp tick/array/build)
+  tick_pybind_module(tick_base_py base python/src/tick_base_module.cpp tick/base/build)
+  tick_pybind_module(tick_array_test_py array_test python/src/tick_array_test_module.cpp tick/array_test/build)
+endif()
