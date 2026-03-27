@@ -104,4 +104,8 @@ if(TICK_BUILD_STAGE1_SPIKE)
     tick_prox_py prox python/src/tick_prox_module.cpp tick/prox/build
     tick_prox
   )
+  tick_pybind_module(
+    tick_solver_py solver python/src/tick_solver_module.cpp tick/solver/build
+    tick_solver tick_prox tick_base_model tick_linear_model tick_crandom
+  )
 endif()

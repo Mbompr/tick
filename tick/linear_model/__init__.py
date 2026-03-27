@@ -11,11 +11,17 @@ from .simu_logreg import SimuLogReg
 
 try:
     from .linear_regression import LinearRegression
-    from .logistic_regression import LogisticRegression
-    from .poisson_regression import PoissonRegression
 except ImportError:
     LinearRegression = None
+
+try:
+    from .logistic_regression import LogisticRegression
+except ImportError:
     LogisticRegression = None
+
+try:
+    from .poisson_regression import PoissonRegression
+except ImportError:
     PoissonRegression = None
 
 try:

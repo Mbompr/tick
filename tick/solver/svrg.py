@@ -15,7 +15,12 @@ from tick.solver.build.solver import SVRG_StepType_BarzilaiBorwein
 
 from .build.solver import SVRGDouble as _SVRGDouble
 from .build.solver import SVRGFloat as _SVRGFloat
-from .build.solver import MultiSVRGDouble as MultiSVRG, SVRGDoublePtrVector
+
+try:
+    from .build.solver import MultiSVRGDouble as MultiSVRG, SVRGDoublePtrVector
+except ImportError:
+    MultiSVRG = None
+    SVRGDoublePtrVector = None
 
 __author__ = "Stephane Gaiffas"
 
@@ -318,6 +323,9 @@ class SVRG(SolverFirstOrderSto):
 
         if len(coeffes) != len(solvers):
             raise ValueError("size mismatch between coeffes and solvers")
+        if MultiSVRG is None or SVRGDoublePtrVector is None:
+            raise NotImplementedError(
+                "SVRG multi_solve is not available in the current pybind11 build")
         mins = []
         sss = SVRGDoublePtrVector(0)
         for i in range(len(solvers)):
@@ -340,4 +348,3 @@ class SVRG(SolverFirstOrderSto):
                       str(solvers[i].time_elapsed) + " seconds")
             solvers[i]._post_solve_and_record_in_cpp(mins[i], solvers[i]._solver.get_first_obj())
         return mins
-
