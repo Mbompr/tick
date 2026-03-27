@@ -92,4 +92,12 @@ if(TICK_BUILD_STAGE1_SPIKE)
     tick_random_py crandom python/src/tick_random_module.cpp tick/random/build
     tick_crandom
   )
+  tick_pybind_module(
+    tick_base_model_py base_model python/src/tick_base_model_module.cpp
+    tick/base_model/build tick_base_model
+  )
+  tick_pybind_module(
+    tick_linear_model_py linear_model python/src/tick_linear_model_module.cpp
+    tick/linear_model/build tick_linear_model tick_base_model
+  )
 endif()
