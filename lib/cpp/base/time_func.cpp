@@ -8,6 +8,9 @@
 #include <float.h>
 #define FLOOR_THRESHOLD 1e-10
 
+const TimeFunction::InterMode TimeFunction::DEFAULT_INTER;
+const TimeFunction::BorderType TimeFunction::DEFAULT_BORDER;
+
 TimeFunction::TimeFunction(double y) {
   // Little trick so that it will predict y after 0 and 0 before
   // 2* is needed to ensure that 0 > last_value_before_border + FLOOR_THRESHOLD

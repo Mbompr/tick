@@ -7,7 +7,12 @@ def _set_mpl_backend():
     Code imported from nilearn (nilearn/nilearn/plotting/__init__.py)
     """
     # We are doing local imports here to avoid polluting our namespace
-    import matplotlib
+    try:
+        import matplotlib
+    except ModuleNotFoundError as exc:
+        if exc.name != 'matplotlib':
+            raise
+        return
     import os
     import sys
     # Set the backend to a non-interactive one for unices without X
@@ -23,7 +28,15 @@ _set_mpl_backend()
 from tick.array import *
 from .timefunc import TimeFunction
 from .base import Base
-from ..random import *
+try:
+    from ..random import *
+except ModuleNotFoundError as exc:
+    if exc.name not in {
+            'tick.random',
+            'tick.random.build',
+            'tick.random.build.crandom',
+    }:
+        raise
 from .decorators import actual_kwargs
 from .threadpool import ThreadPool
 
