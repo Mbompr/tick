@@ -58,7 +58,7 @@ add_subdirectory(lib)
 
 function(tick_pybind_module target_name output_name source_file install_dir)
   pybind11_add_module(${target_name} MODULE "${source_file}")
-  target_link_libraries(${target_name} PRIVATE tick_array tick_base tick_array_test)
+  target_link_libraries(${target_name} PRIVATE tick_array tick_base ${ARGN})
   target_include_directories(${target_name} PRIVATE
     "${PROJECT_SOURCE_DIR}/python/src"
     "${PROJECT_SOURCE_DIR}/lib/include"
@@ -78,7 +78,18 @@ function(tick_pybind_module target_name output_name source_file install_dir)
 endfunction()
 
 if(TICK_BUILD_STAGE1_SPIKE)
-  tick_pybind_module(tick_array_py array python/src/tick_array_module.cpp tick/array/build)
-  tick_pybind_module(tick_base_py base python/src/tick_base_module.cpp tick/base/build)
-  tick_pybind_module(tick_array_test_py array_test python/src/tick_array_test_module.cpp tick/array_test/build)
+  tick_pybind_module(
+    tick_array_py array python/src/tick_array_module.cpp tick/array/build
+  )
+  tick_pybind_module(
+    tick_base_py base python/src/tick_base_module.cpp tick/base/build
+  )
+  tick_pybind_module(
+    tick_array_test_py array_test python/src/tick_array_test_module.cpp
+    tick/array_test/build tick_array_test
+  )
+  tick_pybind_module(
+    tick_random_py crandom python/src/tick_random_module.cpp tick/random/build
+    tick_crandom
+  )
 endif()
