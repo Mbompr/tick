@@ -25,7 +25,7 @@ namespace {
 
 template <typename ProxType, typename Scalar>
 void bind_prox_base(py::module_ &m, const char *name) {
-  py::class_<ProxType, std::shared_ptr<ProxType>>(m, name)
+  auto cls = py::class_<ProxType, std::shared_ptr<ProxType>>(m, name)
       .def("call",
            [](ProxType &self, const Array<Scalar> &coeffs, Scalar step,
               Array<Scalar> &out) { self.call(coeffs, step, out); },
@@ -41,6 +41,7 @@ void bind_prox_base(py::module_ &m, const char *name) {
            py::arg("end"))
       .def("get_positive", &ProxType::get_positive)
       .def("set_positive", &ProxType::set_positive, py::arg("positive"));
+  tick::pybind::enable_cereal_pickle<ProxType>(cls);
 }
 
 template <typename ProxType, typename BaseType, typename Scalar>
@@ -141,7 +142,9 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
       .def("set_blocks_length", &ProxWithGroups::set_blocks_length,
            py::arg("blocks_length"));
 
-  py::class_<ProxZero, std::shared_ptr<ProxZero>, ProxBase>(m, prox_zero_name)
+  auto prox_zero =
+      py::class_<ProxZero, std::shared_ptr<ProxZero>, ProxBase>(m,
+                                                                prox_zero_name)
       .def(py::init<Scalar>(), py::arg("strength"))
       .def(py::init<Scalar, ulong, ulong>(), py::arg("strength"),
            py::arg("start"), py::arg("end"))
@@ -153,9 +156,11 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
            [](ProxZero &self, ProxZero &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<ProxZero>(prox_zero);
 
-  py::class_<ProxPositive, std::shared_ptr<ProxPositive>, ProxBase>(
-      m, prox_positive_name)
+  auto prox_positive =
+      py::class_<ProxPositive, std::shared_ptr<ProxPositive>, ProxBase>(
+          m, prox_positive_name)
       .def(py::init<Scalar>(), py::arg("strength"))
       .def(py::init<Scalar, ulong, ulong>(), py::arg("strength"),
            py::arg("start"), py::arg("end"))
@@ -167,6 +172,7 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
            [](ProxPositive &self, ProxPositive &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<ProxPositive>(prox_positive);
 
   auto prox_l1 =
       bind_basic_prox<ProxL1, ProxBase, Scalar>(m, prox_l1_name);
@@ -174,13 +180,21 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
       bind_basic_prox<ProxL2, ProxBase, Scalar>(m, prox_l2_name);
   auto prox_l2sq =
       bind_basic_prox<ProxL2Sq, ProxBase, Scalar>(m, prox_l2sq_name);
-  bind_basic_prox<ProxTV, ProxBase, Scalar>(m, prox_tv_name);
-  bind_basic_prox<ProxEquality, ProxBase, Scalar>(m, prox_equality_name);
+  auto prox_tv =
+      bind_basic_prox<ProxTV, ProxBase, Scalar>(m, prox_tv_name);
+  auto prox_equality =
+      bind_basic_prox<ProxEquality, ProxBase, Scalar>(m, prox_equality_name);
   bind_array_step_call<decltype(prox_l1), ProxL1, Scalar>(prox_l1);
   bind_array_step_call<decltype(prox_l2sq), ProxL2Sq, Scalar>(prox_l2sq);
+  tick::pybind::enable_cereal_pickle<ProxL1>(prox_l1);
+  tick::pybind::enable_cereal_pickle<ProxL2>(prox_l2);
+  tick::pybind::enable_cereal_pickle<ProxL2Sq>(prox_l2sq);
+  tick::pybind::enable_cereal_pickle<ProxTV>(prox_tv);
+  tick::pybind::enable_cereal_pickle<ProxEquality>(prox_equality);
 
-  py::class_<ProxElasticNet, std::shared_ptr<ProxElasticNet>, ProxBase>(
-      m, prox_elasticnet_name)
+  auto prox_elasticnet =
+      py::class_<ProxElasticNet, std::shared_ptr<ProxElasticNet>, ProxBase>(
+          m, prox_elasticnet_name)
       .def(py::init<Scalar, Scalar, bool>(), py::arg("strength"),
            py::arg("ratio"), py::arg("positive"))
       .def(py::init<Scalar, Scalar, ulong, ulong, bool>(),
@@ -196,6 +210,7 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
            [](ProxElasticNet &self, ProxElasticNet &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<ProxElasticNet>(prox_elasticnet);
 
   auto prox_l1w =
       py::class_<ProxL1w, std::shared_ptr<ProxL1w>, ProxBase>(
@@ -216,13 +231,52 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
              return static_cast<bool>(self.compare(other));
            });
   bind_array_step_call<decltype(prox_l1w), ProxL1w, Scalar>(prox_l1w);
+  tick::pybind::enable_cereal_pickle<ProxL1w>(prox_l1w);
 
-  bind_group_prox<ProxGroupL1, ProxWithGroups, Scalar>(m, prox_group_l1_name);
-  bind_group_prox<ProxBinarsity, ProxWithGroups, Scalar>(m,
-                                                         prox_binarsity_name);
+  auto prox_group_l1 =
+      py::class_<ProxGroupL1, std::shared_ptr<ProxGroupL1>, ProxWithGroups>(
+          m, prox_group_l1_name)
+          .def(py::init<Scalar, SArrayULongPtr, SArrayULongPtr, bool>(),
+               py::arg("strength"), py::arg("blocks_start"),
+               py::arg("blocks_length"), py::arg("positive"))
+          .def(py::init<Scalar, SArrayULongPtr, SArrayULongPtr, ulong, ulong,
+                        bool>(),
+               py::arg("strength"), py::arg("blocks_start"),
+               py::arg("blocks_length"), py::arg("start"), py::arg("end"),
+               py::arg("positive"))
+          .def("compare",
+               [](ProxGroupL1 &self, ProxGroupL1 &other) {
+                 return static_cast<bool>(self.compare(other));
+               })
+          .def("__eq__",
+               [](ProxGroupL1 &self, ProxGroupL1 &other) {
+                 return static_cast<bool>(self.compare(other));
+               });
+  tick::pybind::enable_cereal_pickle<ProxGroupL1>(prox_group_l1);
 
-  py::class_<ProxMulti, std::shared_ptr<ProxMulti>, ProxBase>(m,
-                                                              prox_multi_name)
+  auto prox_binarsity =
+      py::class_<ProxBinarsity, std::shared_ptr<ProxBinarsity>, ProxWithGroups>(
+          m, prox_binarsity_name)
+          .def(py::init<Scalar, SArrayULongPtr, SArrayULongPtr, bool>(),
+               py::arg("strength"), py::arg("blocks_start"),
+               py::arg("blocks_length"), py::arg("positive"))
+          .def(py::init<Scalar, SArrayULongPtr, SArrayULongPtr, ulong, ulong,
+                        bool>(),
+               py::arg("strength"), py::arg("blocks_start"),
+               py::arg("blocks_length"), py::arg("start"), py::arg("end"),
+               py::arg("positive"))
+          .def("compare",
+               [](ProxBinarsity &self, ProxBinarsity &other) {
+                 return static_cast<bool>(self.compare(other));
+               })
+          .def("__eq__",
+               [](ProxBinarsity &self, ProxBinarsity &other) {
+                 return static_cast<bool>(self.compare(other));
+               });
+  tick::pybind::enable_cereal_pickle<ProxBinarsity>(prox_binarsity);
+
+  auto prox_multi = py::class_<ProxMulti, std::shared_ptr<ProxMulti>, ProxBase>(
+                        m, prox_multi_name)
       .def(py::init<std::vector<std::shared_ptr<ProxBase>>>(), py::arg("proxs"))
       .def("compare",
            [](ProxMulti &self, ProxMulti &other) {
@@ -232,9 +286,11 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
            [](ProxMulti &self, ProxMulti &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<ProxMulti>(prox_multi);
 
-  py::class_<ProxSortedL1, std::shared_ptr<ProxSortedL1>, ProxBase>(
-      m, prox_sorted_l1_name)
+  auto prox_sorted_l1 =
+      py::class_<ProxSortedL1, std::shared_ptr<ProxSortedL1>, ProxBase>(
+          m, prox_sorted_l1_name)
       .def(py::init<Scalar, WeightsType, bool>(), py::arg("strength"),
            py::arg("weights_type"), py::arg("positive"))
       .def(py::init<Scalar, WeightsType, ulong, ulong, bool>(),
@@ -252,9 +308,11 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
            [](ProxSortedL1 &self, ProxSortedL1 &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<ProxSortedL1>(prox_sorted_l1);
 
-  py::class_<ProxSlope, std::shared_ptr<ProxSlope>, ProxSortedL1>(
-      m, prox_slope_name)
+  auto prox_slope =
+      py::class_<ProxSlope, std::shared_ptr<ProxSlope>, ProxSortedL1>(
+          m, prox_slope_name)
       .def(py::init<Scalar, Scalar, bool>(), py::arg("strength"),
            py::arg("false_discovery_rate"), py::arg("positive"))
       .def(py::init<Scalar, Scalar, ulong, ulong, bool>(),
@@ -271,6 +329,7 @@ auto bind_prox_hierarchy(py::module_ &m, const char *prox_name,
            [](ProxSlope &self, ProxSlope &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<ProxSlope>(prox_slope);
 }
 
 }  // namespace

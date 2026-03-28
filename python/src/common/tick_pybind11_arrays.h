@@ -25,6 +25,7 @@
 #include "tick/array/ssparsearray.h"
 #include "tick/array/ssparsearray2d.h"
 #include "tick/array/varray.h"
+#include "tick/base/serialization.h"
 
 namespace py = pybind11;
 
@@ -40,6 +41,23 @@ inline bool ensure_numpy_imported() {
     imported = true;
   }
   return true;
+}
+
+template <typename Value, typename Class>
+void enable_cereal_pickle(Class &cls) {
+  cls.def(py::pickle(
+      [](const Value &value) {
+        return py::make_tuple(
+            tick::object_to_string(const_cast<Value *>(&value)));
+      },
+      [](py::tuple state) {
+        if (state.size() != 1) {
+          throw std::runtime_error("Invalid pickle state");
+        }
+        auto value = std::make_shared<Value>();
+        tick::object_from_string(value.get(), state[0].cast<std::string>());
+        return value;
+      }));
 }
 
 template <typename T>

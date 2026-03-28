@@ -564,6 +564,51 @@ class Base(metaclass=BaseMeta):
         """
         self._set(key, getattr(self, key) + step)
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        cpp_obj_name = getattr(self, "_cpp_obj_name", None)
+        if cpp_obj_name is not None:
+            state.pop(BaseMeta.hidden_attr(cpp_obj_name), None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        cpp_obj_name = getattr(self, "_cpp_obj_name", None)
+        if cpp_obj_name is None:
+            return
+
+        if cpp_obj_name == "_model":
+            features = getattr(self, "features", None)
+            labels = getattr(self, "labels", None)
+            dtype = getattr(self, "dtype", None)
+            if features is not None and labels is not None and hasattr(
+                    self, "fit"):
+                self.fit(features, labels)
+            elif dtype is not None and hasattr(self, "_build_cpp_model"):
+                try:
+                    self._set("_model", self._build_cpp_model(dtype))
+                except TypeError:
+                    # Some model copies used by astype()/deepcopy temporarily
+                    # clear features and labels, and their native model cannot
+                    # be rebuilt until data is reattached.
+                    self._set("_model", None)
+        elif cpp_obj_name == "_prox":
+            dtype = getattr(self, "dtype", None)
+            if dtype is not None and hasattr(self, "_build_cpp_prox"):
+                self._set("_prox", self._build_cpp_prox(dtype))
+        elif cpp_obj_name == "_solver":
+            dtype = getattr(self, "dtype", None)
+            model = getattr(self, "model", None)
+            prox = getattr(self, "prox", None)
+            target_dtype = dtype or getattr(model, "dtype", None) or "float64"
+            if hasattr(self, "_set_cpp_solver"):
+                self._set_cpp_solver(target_dtype)
+                if model is not None:
+                    self.set_model(model)
+                if prox is not None:
+                    self.set_prox(prox)
+
     def __str__(self):
         dic = self._as_dict()
         if 'dtype' in dic and isinstance(dic['dtype'], np.dtype):

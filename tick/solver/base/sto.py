@@ -2,6 +2,8 @@
 
 from abc import ABC
 
+import numpy as np
+
 from tick.base import Base
 from tick.base_model import Model
 from tick.prox.base import Prox
@@ -56,6 +58,9 @@ class SolverSto(Base):
         },
         "seed": {
             "cpp_setter": "set_seed"
+        },
+        "_cpp_seed": {
+            "writable": False
         }
     }
 
@@ -69,6 +74,7 @@ class SolverSto(Base):
         self._solver = None
         self._rand_type = None
         self._rand_max = None
+        self._cpp_seed = None
         self.epoch_size = epoch_size
         self.rand_type = rand_type
         self.seed = seed
@@ -127,3 +133,11 @@ class SolverSto(Base):
         import tick.base.dtype_to_cpp_type
         return tick.base.dtype_to_cpp_type.get_typed_class(
             self, dtype_or_object_with_dtype, dtype_map)
+
+    def _get_effective_seed(self):
+        if self.seed >= 0:
+            self._set("_cpp_seed", self.seed)
+            return self.seed
+        if self._cpp_seed is None:
+            self._set("_cpp_seed", int(np.random.randint(0, 2 ** 31 - 1)))
+        return self._cpp_seed
