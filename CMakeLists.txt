@@ -118,4 +118,16 @@ if(TICK_BUILD_STAGE1_SPIKE)
     tick/hawkes/simulation/build
     tick_hawkes_simulation tick_hawkes_model tick_crandom
   )
+  tick_pybind_module(
+    tick_hawkes_model_py hawkes_model
+    python/src/tick_hawkes_model_module.cpp
+    tick/hawkes/model/build
+    tick_hawkes_model tick_base_model
+  )
+  tick_pybind_module(
+    tick_hawkes_inference_py hawkes_inference
+    python/src/tick_hawkes_inference_module.cpp
+    tick/hawkes/inference/build
+    tick_hawkes_inference tick_hawkes_model tick_base_model
+  )
 endif()

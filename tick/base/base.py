@@ -588,6 +588,9 @@ class Base(metaclass=BaseMeta):
             elif dtype is not None and hasattr(self, "_build_cpp_model"):
                 try:
                     self._set("_model", self._build_cpp_model(dtype))
+                    data = getattr(self, "data", None)
+                    if data is not None and hasattr(self, "_set_data"):
+                        self._set_data(data)
                 except TypeError:
                     # Some model copies used by astype()/deepcopy temporarily
                     # clear features and labels, and their native model cannot

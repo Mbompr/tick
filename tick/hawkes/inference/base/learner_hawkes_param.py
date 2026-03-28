@@ -8,7 +8,6 @@ from tick.base import actual_kwargs
 from tick.base.learner import LearnerOptim
 from tick.base_model import ModelLipschitz
 from tick.hawkes import SimuHawkes
-from tick.plot import plot_point_process, qq_plots
 from tick.prox import ProxElasticNet, ProxL1, ProxL2Sq, ProxPositive
 
 
@@ -430,6 +429,8 @@ class LearnerHawkesParametric(LearnerOptim):
         simu.track_intensity(intensity_track_step)
         simu.set_timestamps(events, end_time)
 
+        from tick.plot import plot_point_process
+
         plot_point_process(simu, plot_intensity=True, n_points=n_points,
                            plot_nodes=plot_nodes, t_min=t_min, t_max=t_max,
                            max_jumps=max_jumps, show=show, ax=ax)
@@ -459,4 +460,7 @@ class LearnerHawkesParametric(LearnerOptim):
         simu = self._corresponding_simu()
         simu.set_timestamps(events, end_time=end_time)
         simu.store_compensator_values()
+
+        from tick.plot import qq_plots
+
         return qq_plots(simu, **kwargs)
