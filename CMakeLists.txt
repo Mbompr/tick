@@ -108,4 +108,8 @@ if(TICK_BUILD_STAGE1_SPIKE)
     tick_solver_py solver python/src/tick_solver_module.cpp tick/solver/build
     tick_solver tick_prox tick_base_model tick_linear_model tick_crandom
   )
+  tick_pybind_module(
+    tick_robust_py robust python/src/tick_robust_module.cpp tick/robust/build
+    tick_robust tick_linear_model tick_base_model
+  )
 endif()

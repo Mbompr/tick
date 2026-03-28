@@ -2,10 +2,12 @@
 #include <pybind11/stl.h>
 
 #include "common/tick_pybind11_arrays.h"
+#include "tick/solver/adagrad.h"
 #include "tick/solver/enums.h"
+#include "tick/solver/saga.h"
 #include "tick/solver/sgd.h"
-#include "tick/solver/svrg.h"
 #include "tick/solver/sdca.h"
+#include "tick/solver/svrg.h"
 
 namespace py = pybind11;
 
@@ -16,7 +18,7 @@ void bind_sto_solver_base(py::module_ &m, const char *name) {
   using ModelType = TModel<Scalar, Scalar>;
   using ProxType = TProx<Scalar, Scalar>;
 
-  py::class_<SolverType, std::shared_ptr<SolverType>>(m, name)
+  auto cls = py::class_<SolverType, std::shared_ptr<SolverType>>(m, name)
       .def("set_model", &SolverType::set_model, py::arg("model"),
            py::return_value_policy::reference_internal)
       .def("set_prox", &SolverType::set_prox, py::arg("prox"),
@@ -56,11 +58,13 @@ void bind_sto_solver_base(py::module_ &m, const char *name) {
       .def("get_iterate_history", &SolverType::get_iterate_history)
       .def("get_model", &SolverType::get_model)
       .def("get_prox", &SolverType::get_prox);
+  tick::pybind::enable_cereal_pickle<SolverType>(cls);
 }
 
 template <typename SolverType, typename BaseType, typename Scalar>
 void bind_sgd_like(py::module_ &m, const char *name) {
-  py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m, name)
+  auto cls = py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m,
+                                                                           name)
       .def(py::init<ulong, Scalar, RandType, Scalar, int, int>(),
            py::arg("epoch_size"), py::arg("tol"), py::arg("rand_type"),
            py::arg("step"), py::arg("record_every") = 1,
@@ -71,11 +75,13 @@ void bind_sgd_like(py::module_ &m, const char *name) {
            [](SolverType &self, SolverType &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<SolverType>(cls);
 }
 
 template <typename SolverType, typename BaseType, typename Scalar>
 void bind_svrg_like(py::module_ &m, const char *name) {
-  py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m, name)
+  auto cls = py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m,
+                                                                           name)
       .def(py::init<size_t, Scalar, RandType, Scalar, size_t, int, size_t,
                     SVRG_VarianceReductionMethod, SVRG_StepType>(),
            py::arg("epoch_size"), py::arg("tol"), py::arg("rand_type"),
@@ -95,11 +101,13 @@ void bind_svrg_like(py::module_ &m, const char *name) {
            [](SolverType &self, SolverType &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<SolverType>(cls);
 }
 
 template <typename SolverType, typename BaseType, typename Scalar>
 void bind_sdca_like(py::module_ &m, const char *name) {
-  py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m, name)
+  auto cls = py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m,
+                                                                           name)
       .def(py::init<Scalar, ulong, Scalar, RandType, int, int>(),
            py::arg("l_l2sq"), py::arg("epoch_size") = 0, py::arg("tol") = 0,
            py::arg("rand_type") = RandType::unif,
@@ -112,6 +120,39 @@ void bind_sdca_like(py::module_ &m, const char *name) {
            [](SolverType &self, SolverType &other) {
              return static_cast<bool>(self.compare(other));
            });
+  tick::pybind::enable_cereal_pickle<SolverType>(cls);
+}
+
+template <typename SolverType, typename BaseType, typename Scalar>
+void bind_adagrad_like(py::module_ &m, const char *name) {
+  auto cls = py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m,
+                                                                           name)
+      .def(py::init<ulong, Scalar, RandType, Scalar, int, int>(),
+           py::arg("epoch_size"), py::arg("tol"), py::arg("rand_type"),
+           py::arg("step"), py::arg("record_every") = 1,
+           py::arg("seed") = -1)
+      .def("compare",
+           [](SolverType &self, SolverType &other) {
+             return static_cast<bool>(self.compare(other));
+           });
+  tick::pybind::enable_cereal_pickle<SolverType>(cls);
+}
+
+template <typename SolverType, typename BaseType, typename Scalar>
+void bind_saga_like(py::module_ &m, const char *name) {
+  auto cls = py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m,
+                                                                           name)
+      .def(py::init<ulong, Scalar, RandType, Scalar, int, int>(),
+           py::arg("epoch_size"), py::arg("tol"), py::arg("rand_type"),
+           py::arg("step"), py::arg("record_every") = 1,
+           py::arg("seed") = -1)
+      .def("get_step", &SolverType::get_step)
+      .def("set_step", &SolverType::set_step, py::arg("step"))
+      .def("compare",
+           [](SolverType &self, SolverType &other) {
+             return static_cast<bool>(self.compare(other));
+           });
+  tick::pybind::enable_cereal_pickle<SolverType>(cls);
 }
 
 }  // namespace
@@ -151,6 +192,11 @@ PYBIND11_MODULE(solver, m) {
   bind_sgd_like<TSGD<float, float>, TStoSolver<float, float>, float>(
       m, "SGDFloat");
 
+  bind_adagrad_like<TAdaGrad<double>, TStoSolver<double, double>, double>(
+      m, "AdaGradDouble");
+  bind_adagrad_like<TAdaGrad<float>, TStoSolver<float, float>, float>(
+      m, "AdaGradFloat");
+
   bind_svrg_like<TSVRG<double, double>, TStoSolver<double, double>, double>(
       m, "SVRGDouble");
   bind_svrg_like<TSVRG<float, float>, TStoSolver<float, float>, float>(
@@ -160,4 +206,9 @@ PYBIND11_MODULE(solver, m) {
       m, "SDCADouble");
   bind_sdca_like<TSDCA<float, float>, TStoSolver<float, float>, float>(
       m, "SDCAFloat");
+
+  bind_saga_like<TSAGA<double>, TStoSolver<double, double>, double>(
+      m, "SAGADouble");
+  bind_saga_like<TSAGA<float>, TStoSolver<float, float>, float>(m,
+                                                                 "SAGAFloat");
 }

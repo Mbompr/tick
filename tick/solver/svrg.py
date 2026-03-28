@@ -293,7 +293,8 @@ class SVRG(SolverFirstOrderSto):
         self._set(
             '_solver',
             solver_class(epoch_size, self.tol, self._rand_type, step,
-                         self.record_every, self.seed, self.n_threads))
+                         self.record_every, self._get_effective_seed(),
+                         self.n_threads))
 
         self.variance_reduction = self._var_red_str
         self.step_type = self._step_type_str

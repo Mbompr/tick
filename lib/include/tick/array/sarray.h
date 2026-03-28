@@ -329,18 +329,24 @@ VEC_PTR_CMP(unsigned long);
   typedef std::vector<SArray##NAME##PtrList1D> SArray##NAME##PtrList2D; \
   VEC_PTR_CMP(TYPE);
 
-SARRAY_DEFINE_TYPE(double, Double);
-SARRAY_DEFINE_TYPE(float, Float);
-SARRAY_DEFINE_TYPE(int32_t, Int);
-SARRAY_DEFINE_TYPE(uint32_t, UInt);
-SARRAY_DEFINE_TYPE(int16_t, Short);
-SARRAY_DEFINE_TYPE(uint16_t, UShort);
-SARRAY_DEFINE_TYPE(int64_t, Long);
-SARRAY_DEFINE_TYPE(ulong, ULong);
-SARRAY_DEFINE_TYPE(std::atomic<double>, AtomicDouble);
-SARRAY_DEFINE_TYPE(std::atomic<float>, AtomicFloat);
+#define SARRAY_DEFINE_TYPE_SERIALIZE(TYPE, NAME)                  \
+  SARRAY_DEFINE_TYPE(TYPE, NAME);                                 \
+  CEREAL_REGISTER_TYPE(SArray##NAME);                             \
+  CEREAL_REGISTER_POLYMORPHIC_RELATION(BaseArray##NAME, SArray##NAME)
+
+SARRAY_DEFINE_TYPE_SERIALIZE(double, Double);
+SARRAY_DEFINE_TYPE_SERIALIZE(float, Float);
+SARRAY_DEFINE_TYPE_SERIALIZE(int32_t, Int);
+SARRAY_DEFINE_TYPE_SERIALIZE(uint32_t, UInt);
+SARRAY_DEFINE_TYPE_SERIALIZE(int16_t, Short);
+SARRAY_DEFINE_TYPE_SERIALIZE(uint16_t, UShort);
+SARRAY_DEFINE_TYPE_SERIALIZE(int64_t, Long);
+SARRAY_DEFINE_TYPE_SERIALIZE(ulong, ULong);
+SARRAY_DEFINE_TYPE_SERIALIZE(std::atomic<double>, AtomicDouble);
+SARRAY_DEFINE_TYPE_SERIALIZE(std::atomic<float>, AtomicFloat);
 
 #undef SARRAY_DEFINE_TYPE
+#undef SARRAY_DEFINE_TYPE_SERIALIZE
 #undef VEC_PTR_CMP
 
 #define INSTANTIATE_SARRAY(SARRAY_TYPE, C_TYPE) \

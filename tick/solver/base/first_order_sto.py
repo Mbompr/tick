@@ -110,8 +110,9 @@ class SolverFirstOrderSto(SolverFirstOrder, SolverSto):
             The `Solver` with given model
         """
         self.validate_model(model)
-        if self.dtype != model.dtype or self._solver is None:
-            self._set_cpp_solver(model.dtype)
+        # Rebuild the native stochastic solver whenever a model is attached so
+        # stale iterate/history state from a previous problem does not leak.
+        self._set_cpp_solver(model.dtype)
 
         self.dtype = model.dtype
         SolverFirstOrder.set_model(self, model)
