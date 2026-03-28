@@ -302,7 +302,7 @@ class SVRG(SolverFirstOrderSto):
     def multi_solve(self, coeffes, solvers, max_iter, threads = None, set_start = True):
         """Complete function for calling solve on multiple independent SVRG C++ instances
            Requires valid solvers setup with model and prox. Vectors of instances are
-           peculiar with SWIG, so we use a vector of pointers, populate the C++ vector from
+           awkward to expose directly in Python, so we use a vector of pointers, populate it from
            Python, then run the solve on each object behind the pointer in C++
 
         Parameters
