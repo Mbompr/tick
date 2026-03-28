@@ -306,6 +306,18 @@ class SimuHawkes(SimuPointProcess):
             self.set_timestamps(timestamps, end_time=simulation_time)
 
     def __deepcopy__(self, memo):
+        if self.__class__ is not SimuHawkes:
+            return self.__class__(
+                adjacency=copy.deepcopy(getattr(self, "adjacency"), memo),
+                decays=copy.deepcopy(getattr(self, "decays"), memo),
+                baseline=copy.deepcopy(self.baseline, memo),
+                end_time=self.end_time,
+                period_length=self.period_length,
+                max_jumps=self.max_jumps,
+                seed=self.seed,
+                verbose=self.verbose,
+                force_simulation=self.force_simulation,
+            )
         kernels = copy.deepcopy(self.kernels, memo)
         baseline = copy.deepcopy(self.baseline, memo)
         cloned = self.__class__(
