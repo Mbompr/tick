@@ -1,11 +1,17 @@
 # License: BSD 3 clause
 
-from .model import (
-    ModelHawkesExpKernLogLik,
-    ModelHawkesExpKernLeastSq,
-    ModelHawkesSumExpKernLogLik,
-    ModelHawkesSumExpKernLeastSq,
-)
+try:
+    from .model import (
+        ModelHawkesExpKernLogLik,
+        ModelHawkesExpKernLeastSq,
+        ModelHawkesSumExpKernLogLik,
+        ModelHawkesSumExpKernLeastSq,
+    )
+except ImportError:
+    ModelHawkesExpKernLogLik = None
+    ModelHawkesExpKernLeastSq = None
+    ModelHawkesSumExpKernLogLik = None
+    ModelHawkesSumExpKernLeastSq = None
 from .simulation import (SimuPoissonProcess, SimuInhomogeneousPoisson,
                          SimuHawkes, SimuHawkesMulti, SimuHawkesExpKernels,
                          SimuHawkesSumExpKernels, HawkesKernel0,
@@ -25,10 +31,6 @@ __all__ = [
     "HawkesConditionalLaw",
     "HawkesEM",
     "HawkesSumGaussians",
-    "ModelHawkesExpKernLogLik",
-    "ModelHawkesExpKernLeastSq",
-    "ModelHawkesSumExpKernLogLik",
-    "ModelHawkesSumExpKernLeastSq",
     "SimuPoissonProcess",
     "SimuInhomogeneousPoisson",
     "SimuHawkes",
@@ -44,3 +46,11 @@ __all__ = [
     "HawkesCumulantMatchingTf",
     "HawkesCumulantMatchingPyT",
 ]
+
+if ModelHawkesExpKernLogLik is not None:
+    __all__.extend([
+        "ModelHawkesExpKernLogLik",
+        "ModelHawkesExpKernLeastSq",
+        "ModelHawkesSumExpKernLogLik",
+        "ModelHawkesSumExpKernLeastSq",
+    ])
