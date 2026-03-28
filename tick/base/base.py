@@ -581,10 +581,18 @@ class Base(metaclass=BaseMeta):
         if cpp_obj_name == "_model":
             features = getattr(self, "features", None)
             labels = getattr(self, "labels", None)
+            times = getattr(self, "times", None)
+            censoring = getattr(self, "censoring", None)
             dtype = getattr(self, "dtype", None)
             if features is not None and labels is not None and hasattr(
                     self, "fit"):
-                self.fit(features, labels)
+                if censoring is not None:
+                    self.fit(features, labels, censoring)
+                else:
+                    self.fit(features, labels)
+            elif features is not None and times is not None and censoring is not None and hasattr(
+                    self, "fit"):
+                self.fit(features, times, censoring)
             elif dtype is not None and hasattr(self, "_build_cpp_model"):
                 try:
                     self._set("_model", self._build_cpp_model(dtype))

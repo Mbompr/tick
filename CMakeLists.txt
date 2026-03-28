@@ -113,6 +113,11 @@ if(TICK_BUILD_STAGE1_SPIKE)
     tick_robust tick_linear_model tick_base_model
   )
   tick_pybind_module(
+    tick_preprocessing_py preprocessing
+    python/src/tick_preprocessing_module.cpp tick/preprocessing/build
+    tick_preprocessing
+  )
+  tick_pybind_module(
     tick_hawkes_simulation_py hawkes_simulation
     python/src/tick_hawkes_simulation_module.cpp
     tick/hawkes/simulation/build
@@ -129,5 +134,10 @@ if(TICK_BUILD_STAGE1_SPIKE)
     python/src/tick_hawkes_inference_module.cpp
     tick/hawkes/inference/build
     tick_hawkes_inference tick_hawkes_model tick_base_model
+  )
+  tick_pybind_module(
+    tick_survival_py survival python/src/tick_survival_module.cpp
+    tick/survival/build
+    tick_survival tick_base_model
   )
 endif()

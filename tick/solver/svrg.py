@@ -325,8 +325,14 @@ class SVRG(SolverFirstOrderSto):
         if len(coeffes) != len(solvers):
             raise ValueError("size mismatch between coeffes and solvers")
         if MultiSVRG is None or SVRGDoublePtrVector is None:
-            raise NotImplementedError(
-                "SVRG multi_solve is not available in the current pybind11 build")
+            mins = []
+            for coeffs, solver in zip(coeffes, solvers):
+                starting_iterate = coeffs.copy()
+                if set_start:
+                    solver._solver.set_starting_iterate(starting_iterate)
+                solver.max_iter = max_iter
+                mins.append(solver.solve().copy())
+            return mins
         mins = []
         sss = SVRGDoublePtrVector(0)
         for i in range(len(solvers)):
