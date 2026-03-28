@@ -17,20 +17,26 @@ from .simulation import (SimuPoissonProcess, SimuInhomogeneousPoisson,
                          SimuHawkesSumExpKernels, HawkesKernel0,
                          HawkesKernelExp, HawkesKernelPowerLaw,
                          HawkesKernelSumExp, HawkesKernelTimeFunc)
-from .inference import (HawkesADM4, HawkesExpKern, HawkesSumExpKern,
-                        HawkesBasisKernels, HawkesConditionalLaw, HawkesEM,
-                        HawkesSumGaussians, HawkesCumulantMatching,
-                        HawkesCumulantMatchingTf, HawkesCumulantMatchingPyT
-                        )
+try:
+    from .inference import (HawkesADM4, HawkesExpKern, HawkesSumExpKern,
+                            HawkesBasisKernels, HawkesConditionalLaw,
+                            HawkesEM, HawkesSumGaussians,
+                            HawkesCumulantMatching,
+                            HawkesCumulantMatchingTf,
+                            HawkesCumulantMatchingPyT)
+except ImportError:
+    HawkesADM4 = None
+    HawkesExpKern = None
+    HawkesSumExpKern = None
+    HawkesBasisKernels = None
+    HawkesConditionalLaw = None
+    HawkesEM = None
+    HawkesSumGaussians = None
+    HawkesCumulantMatching = None
+    HawkesCumulantMatchingTf = None
+    HawkesCumulantMatchingPyT = None
 
 __all__ = [
-    "HawkesADM4",
-    "HawkesExpKern",
-    "HawkesSumExpKern",
-    "HawkesBasisKernels",
-    "HawkesConditionalLaw",
-    "HawkesEM",
-    "HawkesSumGaussians",
     "SimuPoissonProcess",
     "SimuInhomogeneousPoisson",
     "SimuHawkes",
@@ -42,9 +48,6 @@ __all__ = [
     "HawkesKernelPowerLaw",
     "HawkesKernelSumExp",
     "HawkesKernelTimeFunc",
-    "HawkesCumulantMatching",
-    "HawkesCumulantMatchingTf",
-    "HawkesCumulantMatchingPyT",
 ]
 
 if ModelHawkesExpKernLogLik is not None:
@@ -53,4 +56,18 @@ if ModelHawkesExpKernLogLik is not None:
         "ModelHawkesExpKernLeastSq",
         "ModelHawkesSumExpKernLogLik",
         "ModelHawkesSumExpKernLeastSq",
+    ])
+
+if HawkesADM4 is not None:
+    __all__.extend([
+        "HawkesADM4",
+        "HawkesExpKern",
+        "HawkesSumExpKern",
+        "HawkesBasisKernels",
+        "HawkesConditionalLaw",
+        "HawkesEM",
+        "HawkesSumGaussians",
+        "HawkesCumulantMatching",
+        "HawkesCumulantMatchingTf",
+        "HawkesCumulantMatchingPyT",
     ])

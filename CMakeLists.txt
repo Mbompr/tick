@@ -112,4 +112,10 @@ if(TICK_BUILD_STAGE1_SPIKE)
     tick_robust_py robust python/src/tick_robust_module.cpp tick/robust/build
     tick_robust tick_linear_model tick_base_model
   )
+  tick_pybind_module(
+    tick_hawkes_simulation_py hawkes_simulation
+    python/src/tick_hawkes_simulation_module.cpp
+    tick/hawkes/simulation/build
+    tick_hawkes_simulation tick_hawkes_model tick_crandom
+  )
 endif()

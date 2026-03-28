@@ -1,5 +1,6 @@
 # License: BSD 3 clause
 
+import copy
 import warnings
 from itertools import product
 
@@ -249,6 +250,87 @@ class SimuHawkes(SimuPointProcess):
             Value of baseline `i` at `t_values`
         """
         return self._pp.get_baseline(i, t_values)
+
+    def _rebuild_point_process(self):
+        self._kernel_0 = HawkesKernel0()
+
+        n_nodes = None
+        if getattr(self, "baseline", None) is not None:
+            n_nodes = self.baseline.shape[0]
+        elif getattr(self, "kernels", None) is not None:
+            n_nodes = self.kernels.shape[0]
+
+        self._pp = _Hawkes(n_nodes, self._pp_init_seed)
+
+        if getattr(self, "kernels", None) is not None:
+            self._init_kernels()
+        else:
+            self._init_zero_kernels()
+
+        if getattr(self, "baseline", None) is not None:
+            self._init_baseline()
+        else:
+            self._init_zero_baseline()
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["_pp_threshold_negative_intensity"] = \
+            self._pp.get_threshold_negative_intensity()
+        state["_pp_is_intensity_tracked"] = self.is_intensity_tracked()
+        state["_pp_intensity_track_step"] = \
+            self.intensity_track_step if self.is_intensity_tracked() else None
+        state["_pp_timestamps"] = self.timestamps if self.simulation_time > 0 \
+            else None
+        state["_pp_simulation_time"] = self.simulation_time
+        state.pop("_pp", None)
+        return state
+
+    def __setstate__(self, state):
+        threshold_negative_intensity = state.pop(
+            "_pp_threshold_negative_intensity", False)
+        is_intensity_tracked = state.pop("_pp_is_intensity_tracked", False)
+        intensity_track_step = state.pop("_pp_intensity_track_step", None)
+        timestamps = state.pop("_pp_timestamps", None)
+        simulation_time = state.pop("_pp_simulation_time", 0)
+
+        self.__dict__.update(state)
+        self._rebuild_point_process()
+
+        if threshold_negative_intensity:
+            self.threshold_negative_intensity()
+
+        if is_intensity_tracked and intensity_track_step is not None:
+            self.track_intensity(intensity_track_step)
+
+        if simulation_time > 0 and timestamps is not None:
+            self.set_timestamps(timestamps, end_time=simulation_time)
+
+    def __deepcopy__(self, memo):
+        kernels = copy.deepcopy(self.kernels, memo)
+        baseline = copy.deepcopy(self.baseline, memo)
+        cloned = self.__class__(
+            kernels=kernels,
+            baseline=baseline,
+            end_time=self.end_time,
+            period_length=self.period_length,
+            max_jumps=self.max_jumps,
+            seed=self.seed,
+            verbose=self.verbose,
+            force_simulation=self.force_simulation,
+        )
+        memo[id(self)] = cloned
+
+        if self._pp.get_threshold_negative_intensity():
+            cloned.threshold_negative_intensity()
+
+        if self.is_intensity_tracked():
+            cloned.track_intensity(self.intensity_track_step)
+
+        if self.simulation_time > 0:
+            cloned.set_timestamps(copy.deepcopy(self.timestamps, memo),
+                                  end_time=self.simulation_time)
+
+        return cloned
 
     def _simulate(self):
         """Launch simulation of the Hawkes process by thinning
