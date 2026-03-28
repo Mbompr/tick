@@ -2,6 +2,7 @@
 #include <pybind11/stl.h>
 
 #include "common/tick_pybind11_arrays.h"
+#include "tick/solver/asaga.h"
 #include "tick/solver/adagrad.h"
 #include "tick/solver/enums.h"
 #include "tick/solver/saga.h"
@@ -155,6 +156,29 @@ void bind_saga_like(py::module_ &m, const char *name) {
   tick::pybind::enable_cereal_pickle<SolverType>(cls);
 }
 
+template <typename SolverType, typename BaseType, typename Scalar>
+void bind_atomic_saga_like(py::module_ &m, const char *name) {
+  auto cls = py::class_<SolverType, std::shared_ptr<SolverType>, BaseType>(m,
+                                                                           name)
+      .def(py::init([](ulong epoch_size, Scalar tol, RandType rand_type,
+                       Scalar step, int record_every, int seed,
+                       int n_threads) {
+             return std::make_shared<SolverType>(epoch_size, tol, rand_type,
+                                                 step, record_every, seed,
+                                                 n_threads);
+           }),
+           py::arg("epoch_size"), py::arg("tol"), py::arg("rand_type"),
+           py::arg("step"), py::arg("record_every") = 1,
+           py::arg("seed") = -1, py::arg("n_threads") = 2)
+      .def("get_step", &SolverType::get_step)
+      .def("set_step", &SolverType::set_step, py::arg("step"))
+      .def("compare",
+           [](SolverType &self, SolverType &other) {
+             return static_cast<bool>(self.compare(other));
+           });
+  tick::pybind::enable_cereal_pickle<SolverType>(cls);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(solver, m) {
@@ -211,4 +235,8 @@ PYBIND11_MODULE(solver, m) {
       m, "SAGADouble");
   bind_saga_like<TSAGA<float>, TStoSolver<float, float>, float>(m,
                                                                  "SAGAFloat");
+  bind_atomic_saga_like<AtomicSAGADouble, TStoSolver<double, double>, double>(
+      m, "AtomicSAGADouble");
+  bind_atomic_saga_like<AtomicSAGAFloat, TStoSolver<float, float>, float>(
+      m, "AtomicSAGAFloat");
 }
