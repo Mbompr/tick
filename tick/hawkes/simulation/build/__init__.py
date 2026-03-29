@@ -24,9 +24,13 @@ def _load_extension(module_name):
             parent for parent in [package_dir, *package_dir.parents]
             if (parent / "pyproject.toml").exists())
         relative_build_dir = package_dir.relative_to(repo_root)
-        for candidate in sorted(
-                (repo_root / "build").glob(f"*/{relative_build_dir}/{module_name}*")):
+        build_root = repo_root / "build"
+        build_dir_parts = relative_build_dir.parts
+        for candidate in sorted(build_root.rglob(f"{module_name}*")):
             if not candidate.is_file():
+                continue
+            relative_candidate = candidate.relative_to(build_root)
+            if relative_candidate.parts[1:1 + len(build_dir_parts)] != build_dir_parts:
                 continue
             if not any(str(candidate).endswith(suffix)
                        for suffix in importlib.machinery.EXTENSION_SUFFIXES):
