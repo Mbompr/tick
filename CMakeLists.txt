@@ -43,6 +43,10 @@ add_compile_definitions(
   TICK_PYTHON_BINDINGS
 )
 
+if(WIN32 AND TICK_REBUILD_LIBS)
+  add_compile_definitions(TICK_STATIC_LIBS)
+endif()
+
 if(APPLE)
   add_compile_definitions(DARWIN)
 endif()
