@@ -61,6 +61,7 @@ dev = [
   "build>=1.2",
   "twine>=5.1",
   "ruff>=0.11",
+  "numpydoc>=1.8",
 ]
 
 [tool.scikit-build]
@@ -77,4 +78,3 @@ sdist.include = [
   "LICENSE.txt",
   "MANIFEST.in",
 ]
-
