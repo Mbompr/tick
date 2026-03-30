@@ -47,4 +47,4 @@ jobs:
 
     - name: pytest
       run: |
-        python -m pytest -q
+        python -m pytest -x -vv --durations=20 -o console_output_style=progress
