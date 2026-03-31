@@ -10,6 +10,7 @@ on:
 env:
   TICK_DEBUG: 0
   TICK_WERROR: 0
+  PYTHONUNBUFFERED: 1
 
 jobs:
   build:
@@ -47,4 +48,4 @@ jobs:
 
     - name: pytest
       run: |
-        python3 -X faulthandler -m pytest -x -vv --durations=20 -o console_output_style=progress -o faulthandler_timeout=600
+        python3 -u -X faulthandler -m pytest -x -vv -s -rA --durations=20 -o console_output_style=progress -o faulthandler_timeout=600
