@@ -47,4 +47,4 @@ jobs:
 
     - name: pytest
       run: |
-        python3 -m pytest -q
+        python3 -X faulthandler -m pytest -x -vv --durations=20 -o console_output_style=progress -o faulthandler_timeout=600
