@@ -39,7 +39,7 @@ class DLL_PUBLIC TModelPoisReg : public TModelGeneralizedLinear<T, K> {
   bool ready_non_zero_label_map = 0;
   LinkType link_type;
   VArrayULongPtr non_zero_labels;
-  ulong n_non_zeros_labels;
+  ulong n_non_zeros_labels = 0;
 
  public:
   // This exists solely for cereal/python bindings
@@ -53,7 +53,8 @@ class DLL_PUBLIC TModelPoisReg : public TModelGeneralizedLinear<T, K> {
       : TModelLabelsFeatures<T, K>(features, labels),
         TModelGeneralizedLinear<T, K>(features, labels, fit_intercept,
                                       n_threads),
-        link_type(link_type) {}
+        link_type(link_type),
+        n_non_zeros_labels(0) {}
 
   T loss_i(const ulong i, const Array<K> &coeffs) override;
 
