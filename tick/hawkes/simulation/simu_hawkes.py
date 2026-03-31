@@ -252,7 +252,8 @@ class SimuHawkes(SimuPointProcess):
         return self._pp.get_baseline(i, t_values)
 
     def _rebuild_point_process(self):
-        self._kernel_0 = HawkesKernel0()
+        # Rebuilding after pickle/multiprocessing must bypass readonly guards
+        self._set("_kernel_0", HawkesKernel0())
 
         n_nodes = None
         if getattr(self, "baseline", None) is not None:
@@ -260,7 +261,7 @@ class SimuHawkes(SimuPointProcess):
         elif getattr(self, "kernels", None) is not None:
             n_nodes = self.kernels.shape[0]
 
-        self._pp = _Hawkes(n_nodes, self._pp_init_seed)
+        self._set("_pp", _Hawkes(n_nodes, self._pp_init_seed))
 
         if getattr(self, "kernels", None) is not None:
             self._init_kernels()

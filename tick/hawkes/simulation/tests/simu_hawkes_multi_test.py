@@ -8,6 +8,7 @@ from tick.base import TimeFunction
 from tick.hawkes import (SimuHawkes, HawkesKernelExp, HawkesKernelSumExp,
                          HawkesKernel0, HawkesKernelPowerLaw,
                          HawkesKernelTimeFunc, SimuHawkesMulti)
+from tick.hawkes import SimuHawkesExpKernels
 
 
 class Test(unittest.TestCase):
@@ -142,6 +143,23 @@ class Test(unittest.TestCase):
 
         hawkes_multi = SimuHawkesMulti(hawkes, n_simulations=5, n_threads=4)
         hawkes_multi.simulate()
+
+    def test_simu_hawkes_multi_pickleable_exp_kernels(self):
+        """Regression test for multiprocessing pickle rebuild of Hawkes sims"""
+        baseline = np.array([0.3, 0.001])
+        adjacency = np.array([[0.5, 0.8], [0., 1.3]])
+        hawkes = SimuHawkesExpKernels(adjacency=adjacency, decays=0.7,
+                                      baseline=baseline, verbose=False,
+                                      seed=13487, end_time=50)
+        hawkes.adjust_spectral_radius(0.8)
+
+        rebuilt = object.__new__(SimuHawkesExpKernels)
+        rebuilt.__setstate__(hawkes.__getstate__())
+        self.assertEqual(rebuilt.n_nodes, hawkes.n_nodes)
+        np.testing.assert_array_equal(rebuilt.baseline, hawkes.baseline)
+        np.testing.assert_array_equal(rebuilt.adjacency, hawkes.adjacency)
+        rebuilt.simulate()
+        self.assertEqual(len(rebuilt.timestamps), rebuilt.n_nodes)
 
     def test_compensator(self):
         """...Test that compensators with time function kernels give residuals 
