@@ -48,8 +48,16 @@ jobs:
 
     - name: pytest random
       run: |
-        python3 -u -X faulthandler -m pytest -x -vv -s -rA --durations=20 -o console_output_style=progress -o faulthandler_timeout=600 tick/random/tests/random_test.py
+        python3 -u -X faulthandler -m pytest -x -vv -s -rA --durations=20 --timeout=300 --timeout-method=thread -o console_output_style=progress -o faulthandler_timeout=600 tick/random/tests/random_test.py
 
-    - name: pytest
+    - name: pytest core
       run: |
-        python3 -u -X faulthandler -m pytest -x -vv -s -rA --durations=20 -o console_output_style=progress -o faulthandler_timeout=600
+        python3 -u -X faulthandler -m pytest -x -vv -s -rA --durations=20 --timeout=300 --timeout-method=thread -o console_output_style=progress -o faulthandler_timeout=600 tick/array/tests tick/array_test/tests tick/base/tests tick/base_model/tests tick/dataset/tests tick/linear_model/tests tick/preprocessing/tests tick/prox/tests tick/robust/tests tick/solver/tests
+
+    - name: pytest hawkes
+      run: |
+        python3 -u -X faulthandler -m pytest -x -vv -s -rA --durations=20 --timeout=300 --timeout-method=thread -o console_output_style=progress -o faulthandler_timeout=600 tick/hawkes
+
+    - name: pytest remaining
+      run: |
+        python3 -u -X faulthandler -m pytest -x -vv -s -rA --durations=20 --timeout=300 --timeout-method=thread -o console_output_style=progress -o faulthandler_timeout=600 tick/plot/tests tick/survival/tests
