@@ -18,25 +18,30 @@ def _load_extension(module_name):
         package_dir = Path(__file__).resolve().parent
         repo_root = package_dir.parents[2]
         relative_build_dir = package_dir.relative_to(repo_root)
-        build_root = repo_root / "build"
         build_dir_parts = relative_build_dir.parts
-        for candidate in sorted(build_root.rglob(f"{module_name}*")):
-            if not candidate.is_file():
+        for build_root in (repo_root / "_skbuild", repo_root / "build"):
+            if not build_root.exists():
                 continue
-            relative_candidate = candidate.relative_to(build_root)
-            if relative_candidate.parts[1:1 + len(build_dir_parts)] != build_dir_parts:
+            for candidate in sorted(build_root.rglob(f"{module_name}*")):
+                if not candidate.is_file():
+                    continue
+                relative_candidate = candidate.relative_to(build_root)
+                if relative_candidate.parts[1:1 + len(build_dir_parts)] != build_dir_parts:
+                    continue
+                if not any(str(candidate).endswith(suffix)
+                           for suffix in importlib.machinery.EXTENSION_SUFFIXES):
+                    continue
+                qualified_name = f"{__name__}.{module_name}"
+                spec = importlib.util.spec_from_file_location(qualified_name,
+                                                              candidate)
+                if spec is None or spec.loader is None:
+                    continue
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[qualified_name] = module
+                spec.loader.exec_module(module)
+                break
+            else:
                 continue
-            if not any(str(candidate).endswith(suffix)
-                       for suffix in importlib.machinery.EXTENSION_SUFFIXES):
-                continue
-            qualified_name = f"{__name__}.{module_name}"
-            spec = importlib.util.spec_from_file_location(qualified_name,
-                                                          candidate)
-            if spec is None or spec.loader is None:
-                continue
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[qualified_name] = module
-            spec.loader.exec_module(module)
             break
         else:
             raise

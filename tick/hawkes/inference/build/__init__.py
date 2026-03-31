@@ -20,16 +20,20 @@ def _load_hawkes_inference_module():
         repo_root = package_dir.parents[3]
         suffixes = machinery.EXTENSION_SUFFIXES
 
-        for suffix in suffixes:
-            for candidate in sorted(repo_root.rglob(f"hawkes_inference*{suffix}")):
-                if candidate.name.startswith("hawkes_inference"):
-                    spec = util.spec_from_file_location(module_name, candidate)
-                    if spec is None or spec.loader is None:
-                        continue
-                    module = util.module_from_spec(spec)
-                    sys.modules[module_name] = module
-                    spec.loader.exec_module(module)
-                    return module
+        for build_root in (repo_root / "_skbuild", repo_root / "build", repo_root):
+            if build_root != repo_root and not build_root.exists():
+                continue
+            for suffix in suffixes:
+                for candidate in sorted(
+                        build_root.rglob(f"hawkes_inference*{suffix}")):
+                    if candidate.name.startswith("hawkes_inference"):
+                        spec = util.spec_from_file_location(module_name, candidate)
+                        if spec is None or spec.loader is None:
+                            continue
+                        module = util.module_from_spec(spec)
+                        sys.modules[module_name] = module
+                        spec.loader.exec_module(module)
+                        return module
         raise exc
 
 
