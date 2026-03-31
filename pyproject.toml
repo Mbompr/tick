@@ -67,7 +67,7 @@ dev = [
 [tool.scikit-build]
 cmake.version = ">=3.24"
 wheel.packages = ["tick"]
-build-dir = "build/{wheel_tag}"
+build-dir = "_skbuild/{wheel_tag}"
 sdist.include = [
   "CMakeLists.txt",
   "python/src/**",
