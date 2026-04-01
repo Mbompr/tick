@@ -304,7 +304,13 @@ class SimuHawkes(SimuPointProcess):
             self.track_intensity(intensity_track_step)
 
         if simulation_time > 0 and timestamps is not None:
-            self.set_timestamps(timestamps, end_time=simulation_time)
+            restored_end_time = simulation_time
+            # Preserve the configured simulation horizon when we were run with
+            # an explicit end_time and no max_jumps cap.
+            if getattr(self, "end_time", None) is not None and \
+                    getattr(self, "max_jumps", None) is None:
+                restored_end_time = self.end_time
+            self.set_timestamps(timestamps, end_time=restored_end_time)
 
     def __deepcopy__(self, memo):
         if self.__class__ is not SimuHawkes:

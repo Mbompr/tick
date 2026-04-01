@@ -161,6 +161,18 @@ class Test(unittest.TestCase):
         rebuilt.simulate()
         self.assertEqual(len(rebuilt.timestamps), rebuilt.n_nodes)
 
+    def test_simu_hawkes_pickle_restore_keeps_end_time(self):
+        hawkes = SimuHawkes(kernels=self.kernels, baseline=self.baseline,
+                            end_time=10, verbose=False, seed=504)
+        hawkes.simulate()
+
+        rebuilt = object.__new__(SimuHawkes)
+        rebuilt.__setstate__(hawkes.__getstate__())
+
+        self.assertEqual(rebuilt.end_time, hawkes.end_time)
+        self.assertEqual(rebuilt.simulation_time, hawkes.simulation_time)
+        self.assertEqual(rebuilt.n_total_jumps, hawkes.n_total_jumps)
+
     def test_compensator(self):
         """...Test that compensators with time function kernels give residuals 
         that are 1.0 on average
