@@ -10,7 +10,6 @@ on:
 env:
   TICK_DEBUG: 0
   TICK_WERROR: 0
-  PYTHONUNBUFFERED: 1
 
 jobs:
   build:
