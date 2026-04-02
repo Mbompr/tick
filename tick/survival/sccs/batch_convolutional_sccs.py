@@ -21,10 +21,21 @@ class BatchConvSCCS(ConvSCCS):
                  tol: float = 1e-5, max_iter: int = 100, verbose: bool = False,
                  print_every: int = 10, record_every: int = 10,
                  random_state: int = None, batch_size = 1):
-        _, _, _, kvs = inspect.getargvalues(inspect.currentframe())
         object.__setattr__(self, "batch_size", batch_size)
-        del kvs['batch_size']
-        ConvSCCS.__init__(**kvs)
+        ConvSCCS.__init__(
+            self,
+            n_lags=n_lags,
+            penalized_features=penalized_features,
+            C_tv=C_tv,
+            C_group_l1=C_group_l1,
+            step=step,
+            tol=tol,
+            max_iter=max_iter,
+            verbose=verbose,
+            print_every=print_every,
+            record_every=record_every,
+            random_state=random_state,
+        )
 
     def _multi_fit(self, model_list, coeffs_list, C_s, n_folds):
         solvers, proxes = ([] for i in range(2)) # 2 on the left
@@ -171,5 +182,4 @@ class BatchConvSCCS(ConvSCCS):
         return Confidence_intervals(
             self._format_coeffs(coeffs), self._format_coeffs(lower_bound),
             self._format_coeffs(upper_bound), confidence)
-
 

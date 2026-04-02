@@ -14,6 +14,11 @@
 
 import sys
 import os
+
+# Make doc-local Sphinx extensions importable before importing them below.
+sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('.'))
+
 import sphinxext.google_analytics
 try:
   import sphinx_bootstrap_theme
@@ -27,8 +32,6 @@ except ImportError:
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, os.path.abspath('.'))
 
 
 # -- General configuration ----------------------------------------------------
@@ -366,4 +369,3 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 
 def setup(app):
     app.connect('autodoc-skip-member', autodoc_skip_member)
-

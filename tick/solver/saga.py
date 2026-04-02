@@ -14,12 +14,17 @@ dtype_class_mapper = {
     np.dtype('float64'): _SAGADouble
 }
 
-from tick.solver.build.solver import AtomicSAGADouble as _ASAGADouble
-from tick.solver.build.solver import AtomicSAGAFloat as _ASAGAFloat
-dtype_atomic_mapper = {
-    np.dtype('float32'): _ASAGAFloat,
-    np.dtype('float64'): _ASAGADouble
-}
+try:
+    from tick.solver.build.solver import AtomicSAGADouble as _ASAGADouble
+    from tick.solver.build.solver import AtomicSAGAFloat as _ASAGAFloat
+    dtype_atomic_mapper = {
+        np.dtype('float32'): _ASAGAFloat,
+        np.dtype('float64'): _ASAGADouble
+    }
+except ImportError:
+    _ASAGADouble = None
+    _ASAGAFloat = None
+    dtype_atomic_mapper = {}
 
 
 class SAGA(SolverFirstOrderSto):
@@ -199,11 +204,17 @@ class SAGA(SolverFirstOrderSto):
             self._set(
                 '_solver',
                 solver_class(epoch_size, self.tol, self._rand_type, step,
-                             self.record_every, self.seed))
+                             self.record_every, self._get_effective_seed()))
         else:
+            if not dtype_atomic_mapper:
+                raise NotImplementedError(
+                    "Atomic SAGA bindings are not available yet for "
+                    "n_threads > 1"
+                )
             solver_class = self._get_typed_class(dtype_or_object_with_dtype,
                                                  dtype_atomic_mapper)
             self._set(
                 '_solver',
                 solver_class(epoch_size, self.tol, self._rand_type, step,
-                             self.record_every, self.seed, self.n_threads))
+                             self.record_every, self._get_effective_seed(),
+                             self.n_threads))

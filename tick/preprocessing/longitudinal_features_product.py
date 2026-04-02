@@ -215,11 +215,23 @@ class LongitudinalFeaturesProduct(LongitudinalPreprocessor):
     def _finite_exposure_products(self, features):
         """Add product features to features in the finite exposure case."""
         if sps.issparse(features[0]):
-            X_with_products = Parallel(n_jobs=self.n_jobs)(
-                delayed(self._sparse_finite_product)(arr) for arr in features)
+            try:
+                X_with_products = Parallel(n_jobs=self.n_jobs)(
+                    delayed(self._sparse_finite_product)(arr)
+                    for arr in features)
+            except (PermissionError, OSError):
+                X_with_products = [
+                    self._sparse_finite_product(arr) for arr in features
+                ]
         else:
-            X_with_products = Parallel(n_jobs=self.n_jobs)(
-                delayed(self._dense_finite_product)(arr) for arr in features)
+            try:
+                X_with_products = Parallel(n_jobs=self.n_jobs)(
+                    delayed(self._dense_finite_product)(arr)
+                    for arr in features)
+            except (PermissionError, OSError):
+                X_with_products = [
+                    self._dense_finite_product(arr) for arr in features
+                ]
 
         return X_with_products
 

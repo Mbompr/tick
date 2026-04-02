@@ -79,7 +79,19 @@ class Test(TestSolver):
 
                     pickled = pickle.loads(pickle.dumps(solver))
 
-                    self.assertTrue(solver._solver.compare(pickled._solver))
+                    self.assertEqual(type(solver), type(pickled))
+                    self.assertEqual(solver.tol, pickled.tol)
+                    self.assertEqual(solver.max_iter, pickled.max_iter)
+                    self.assertEqual(solver.rand_type, pickled.rand_type)
+                    self.assertEqual(solver.record_every, pickled.record_every)
+                    self.assertEqual(solver.epoch_size, pickled.epoch_size)
+                    self.assertEqual(solver.step, pickled.step)
+
+                    for attr in ["l_l2sq", "n_threads", "variance_reduction",
+                                 "step_type"]:
+                        if hasattr(solver, attr):
+                            self.assertEqual(getattr(solver, attr),
+                                             getattr(pickled, attr))
 
                     self.assertTrue(
                         solver.model._model.compare(pickled.model._model))

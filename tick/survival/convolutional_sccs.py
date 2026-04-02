@@ -1,4 +1,3 @@
-import inspect
 import numpy as np
 from abc import ABC
 from operator import itemgetter
@@ -766,14 +765,18 @@ class ConvSCCS(ABC, Base):
         """All creatioon of solver by class type, removes values from constructor parameter
            list that do not exist on the class construct to be called
          """
-        # inspect must be first assign
-        _, _, _, kvs = inspect.getargvalues(inspect.currentframe())
-        constructor_map = kvs.copy()
-        args = inspect.getfullargspec(clazz.__init__)[0]
-        for k, v in kvs.items():
-            if k not in args:
-                del constructor_map[k]
-        return SVRG(**constructor_map)
+        constructor_map = {
+            "step": step,
+            "max_iter": max_iter,
+            "tol": tol,
+            "print_every": print_every,
+            "record_every": record_every,
+            "verbose": verbose,
+            "seed": seed,
+        }
+        args = clazz.__init__.__code__.co_varnames[:clazz.__init__.__code__.co_argcount]
+        constructor_map = {k: v for k, v in constructor_map.items() if k in args}
+        return clazz(**constructor_map)
 
 
     def _construct_generator_obj(self, C_tv_range, C_group_l1_range,

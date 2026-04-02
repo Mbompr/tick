@@ -15,7 +15,12 @@ from tick.solver.build.solver import SVRG_StepType_BarzilaiBorwein
 
 from .build.solver import SVRGDouble as _SVRGDouble
 from .build.solver import SVRGFloat as _SVRGFloat
-from .build.solver import MultiSVRGDouble as MultiSVRG, SVRGDoublePtrVector
+
+try:
+    from .build.solver import MultiSVRGDouble as MultiSVRG, SVRGDoublePtrVector
+except ImportError:
+    MultiSVRG = None
+    SVRGDoublePtrVector = None
 
 __author__ = "Stephane Gaiffas"
 
@@ -288,7 +293,8 @@ class SVRG(SolverFirstOrderSto):
         self._set(
             '_solver',
             solver_class(epoch_size, self.tol, self._rand_type, step,
-                         self.record_every, self.seed, self.n_threads))
+                         self.record_every, self._get_effective_seed(),
+                         self.n_threads))
 
         self.variance_reduction = self._var_red_str
         self.step_type = self._step_type_str
@@ -296,7 +302,7 @@ class SVRG(SolverFirstOrderSto):
     def multi_solve(self, coeffes, solvers, max_iter, threads = None, set_start = True):
         """Complete function for calling solve on multiple independent SVRG C++ instances
            Requires valid solvers setup with model and prox. Vectors of instances are
-           peculiar with SWIG, so we use a vector of pointers, populate the C++ vector from
+           awkward to expose directly in Python, so we use a vector of pointers, populate it from
            Python, then run the solve on each object behind the pointer in C++
 
         Parameters
@@ -318,6 +324,15 @@ class SVRG(SolverFirstOrderSto):
 
         if len(coeffes) != len(solvers):
             raise ValueError("size mismatch between coeffes and solvers")
+        if MultiSVRG is None or SVRGDoublePtrVector is None:
+            mins = []
+            for coeffs, solver in zip(coeffes, solvers):
+                starting_iterate = coeffs.copy()
+                if set_start:
+                    solver._solver.set_starting_iterate(starting_iterate)
+                solver.max_iter = max_iter
+                mins.append(solver.solve().copy())
+            return mins
         mins = []
         sss = SVRGDoublePtrVector(0)
         for i in range(len(solvers)):
@@ -340,4 +355,3 @@ class SVRG(SolverFirstOrderSto):
                       str(solvers[i].time_elapsed) + " seconds")
             solvers[i]._post_solve_and_record_in_cpp(mins[i], solvers[i]._solver.get_first_obj())
         return mins
-
