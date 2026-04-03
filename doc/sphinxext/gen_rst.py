@@ -20,7 +20,6 @@ import gzip
 import posixpath
 import subprocess
 import warnings
-from sklearn.externals import six
 from docutils.core import publish_string
 
 # Try Python 2 first, otherwise load from Python 3
@@ -55,6 +54,8 @@ except NameError:
 import token
 import tokenize
 import numpy as np
+
+PY2 = sys.version_info[0] == 2
 
 try:
     # make sure that the Agg backend is set before importing any
@@ -115,7 +116,7 @@ def _get_data(url):
 
     return data
 
-mem = joblib.Memory(cachedir='_build')
+mem = joblib.Memory(location='_build')
 get_data = mem.cache(_get_data)
 
 
@@ -430,7 +431,7 @@ carousel_thumbs = {'plot_classifier_comparison_001.png': (1, 600),
 def extract_docstring(filename, ignore_heading=False):
     """ Extract a module-level docstring, if any
     """
-    if six.PY2:
+    if PY2:
         lines = open(filename).readlines()
     else:
         lines = open(filename, encoding='utf-8').readlines()
@@ -543,7 +544,7 @@ Examples
 def extract_line_count(filename, target_dir):
     # Extract the line count of a file
     example_file = os.path.join(target_dir, filename)
-    if six.PY2:
+    if PY2:
         lines = open(example_file).readlines()
     else:
         lines = open(example_file, encoding='utf-8').readlines()
@@ -569,13 +570,13 @@ def line_count_sort(file_list, target_dir):
     # Sort the list of examples by line-count
     new_list = [x for x in file_list if x.endswith('.py')]
     unsorted = np.zeros(shape=(len(new_list), 2))
-    unsorted = unsorted.astype(np.object)
+    unsorted = unsorted.astype(object)
     for count, exmpl in enumerate(new_list):
         docstr_lines, total_lines = extract_line_count(exmpl, target_dir)
         unsorted[count][1] = total_lines - docstr_lines
         unsorted[count][0] = exmpl
-    index = np.lexsort((unsorted[:, 0].astype(np.str),
-                        unsorted[:, 1].astype(np.float)))
+    index = np.lexsort((unsorted[:, 0].astype(str),
+                        unsorted[:, 1].astype(float)))
     if not len(unsorted):
         return []
     return np.array(unsorted[index][:, 0]).tolist()
@@ -707,9 +708,11 @@ def make_thumbnail(in_fname, out_fname, width, height):
 
     width_sc = int(round(scale * width_in))
     height_sc = int(round(scale * height_in))
+    resample = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") \
+        else Image.ANTIALIAS
 
     # resize the image
-    img.thumbnail((width_sc, height_sc), Image.ANTIALIAS)
+    img.thumbnail((width_sc, height_sc), resample)
 
     # insert centered
     thumb = Image.new('RGB', (width, height), (255, 255, 255))
@@ -1005,7 +1008,7 @@ def generate_file_rst(fname, target_dir, src_dir, root_dir, plot_gallery):
 
 
 def get_backref(example_file):
-    if six.PY2:
+    if PY2:
         example_code_obj = identify_names(open(example_file).read())
     else:
         example_code_obj = \
