@@ -87,6 +87,26 @@ add_subdirectory(cpp/robust)
 add_subdirectory(cpp/survival)
 add_subdirectory(cpp/preprocessing)
 
+if (WIN32 AND ${TICK_REBUILD_LIBS})
+    foreach(tick_target
+            ${TICK_LIB_BASE}
+            ${TICK_LIB_ARRAY}
+            ${TICK_LIB_BASE_MODEL}
+            ${TICK_LIB_LINEAR_MODEL}
+            ${TICK_LIB_CRANDOM}
+            ${TICK_LIB_ARRAY_TEST}
+            ${TICK_LIB_HAWKES_INFERENCE}
+            ${TICK_LIB_HAWKES_MODEL}
+            ${TICK_LIB_HAWKES_SIMULATION}
+            ${TICK_LIB_PREPROCESSING}
+            ${TICK_LIB_PROX}
+            ${TICK_LIB_ROBUST}
+            ${TICK_LIB_SOLVER}
+            ${TICK_LIB_SURVIVAL})
+        target_compile_definitions(${tick_target} PRIVATE BUILDING_DLL)
+    endforeach()
+endif ()
+
 if (APPLE)
     set(TICK_INSTALL_RPATH "${CMAKE_CURRENT_SOURCE_DIR}/../tick/array/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/base/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/base_model/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/linear_model/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/random/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/prox/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/solver/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/hawkes/inference/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/hawkes/model/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/hawkes/simulation/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/robust/build;${CMAKE_CURRENT_SOURCE_DIR}/../tick/survival/build;${TICK_EXTRA_RPATH}")
 
