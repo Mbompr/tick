@@ -61,12 +61,13 @@ dev = [
   "build>=1.2",
   "twine>=5.1",
   "ruff>=0.11",
+  "numpydoc>=1.8",
 ]
 
 [tool.scikit-build]
 cmake.version = ">=3.24"
 wheel.packages = ["tick"]
-build-dir = "build/{wheel_tag}"
+build-dir = "_skbuild/{wheel_tag}"
 sdist.include = [
   "CMakeLists.txt",
   "python/src/**",
@@ -77,4 +78,3 @@ sdist.include = [
   "LICENSE.txt",
   "MANIFEST.in",
 ]
-

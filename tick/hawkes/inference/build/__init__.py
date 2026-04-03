@@ -15,14 +15,21 @@ def _load_hawkes_inference_module():
     module_name = __name__ + ".hawkes_inference"
     try:
         return import_module(".hawkes_inference", __name__)
-    except ImportError as exc:
+    except ModuleNotFoundError as exc:
+        if exc.name not in {module_name, "hawkes_inference"}:
+            raise
         package_dir = Path(__file__).resolve().parent
         repo_root = package_dir.parents[3]
-        suffixes = machinery.EXTENSION_SUFFIXES
+        suffixes = tuple(machinery.EXTENSION_SUFFIXES)
 
-        for suffix in suffixes:
-            for candidate in sorted(repo_root.rglob(f"hawkes_inference*{suffix}")):
-                if candidate.name.startswith("hawkes_inference"):
+        for build_root in (repo_root / "_skbuild", repo_root / "build", repo_root):
+            if build_root != repo_root and not build_root.exists():
+                continue
+            for suffix in suffixes:
+                for candidate in sorted(
+                        build_root.rglob(f"hawkes_inference*{suffix}")):
+                    if candidate.name[len("hawkes_inference"):] not in suffixes:
+                        continue
                     spec = util.spec_from_file_location(module_name, candidate)
                     if spec is None or spec.loader is None:
                         continue
