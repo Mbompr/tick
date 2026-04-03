@@ -27,7 +27,7 @@ class DLL_PUBLIC TProxL1w : public TProxSeparable<T, K> {
   SArrayTPtr weights;
 
  public:
-  // This exists soley for cereal/swig
+  // This exists solely for cereal/python bindings
   TProxL1w() : TProxL1w<T, K>(0, nullptr, 0) {}
 
   TProxL1w(T strength, std::shared_ptr<SArray<T>> weights, bool positive)

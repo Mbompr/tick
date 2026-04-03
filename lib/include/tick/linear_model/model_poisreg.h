@@ -42,7 +42,7 @@ class DLL_PUBLIC TModelPoisReg : public TModelGeneralizedLinear<T, K> {
   ulong n_non_zeros_labels;
 
  public:
-  // This exists soley for cereal/swig
+  // This exists solely for cereal/python bindings
   TModelPoisReg()
       : TModelPoisReg<T, K>(nullptr, nullptr, LinkType::identity, 0, 0) {}
 

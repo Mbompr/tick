@@ -40,7 +40,7 @@ endif()
 add_compile_definitions(
   PYTHON_LINK
   TICK_REBUILD_LIBS=ON
-  TICK_SWIG_INCLUDE
+  TICK_PYTHON_BINDINGS
 )
 
 if(APPLE)
