@@ -79,6 +79,22 @@ class SolverSto(Base):
         self.rand_type = rand_type
         self.seed = seed
 
+    @property
+    def seed(self):
+        return object.__getattribute__(self, "__seed")
+
+    @seed.setter
+    def seed(self, val):
+        if val is None:
+            val = -1
+        self._set("seed", val)
+        # A negative seed means "pick a fresh random seed on next rebuild".
+        # Clearing the cache here preserves that behavior across solver resets.
+        if val >= 0:
+            self._set("_cpp_seed", val)
+        else:
+            self._set("_cpp_seed", None)
+
     def set_model(self, model: Model):
         # Give the C++ wrapped model to the solver
         self.dtype = model.dtype

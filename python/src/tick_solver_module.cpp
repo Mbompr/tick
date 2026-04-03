@@ -15,6 +15,37 @@ namespace py = pybind11;
 namespace {
 
 template <typename SolverType, typename Scalar>
+void multi_solve_svrg_impl(const py::iterable &solver_objects,
+                           size_t epochs, py::object threads_object,
+                           py::object starters_object) {
+  std::vector<std::shared_ptr<SolverType>> solver_holders;
+  std::vector<SolverType *> solvers;
+  solver_holders.reserve(static_cast<size_t>(py::len(solver_objects)));
+  solvers.reserve(static_cast<size_t>(py::len(solver_objects)));
+
+  for (const py::handle &item : solver_objects) {
+    auto solver = item.cast<std::shared_ptr<SolverType>>();
+    solver_holders.push_back(solver);
+    solvers.push_back(solver.get());
+  }
+
+  if (threads_object.is_none()) {
+    MultiSVRG<Scalar, Scalar>::multi_solve(solvers, epochs);
+    return;
+  }
+
+  const auto threads = threads_object.cast<size_t>();
+  if (starters_object.is_none()) {
+    MultiSVRG<Scalar, Scalar>::multi_solve(solvers, epochs, threads);
+    return;
+  }
+
+  auto starters =
+      starters_object.cast<std::vector<std::shared_ptr<SArray<Scalar>>>>();
+  MultiSVRG<Scalar, Scalar>::multi_solve(solvers, starters, epochs, threads);
+}
+
+template <typename SolverType, typename Scalar>
 void bind_sto_solver_base(py::module_ &m, const char *name) {
   using ModelType = TModel<Scalar, Scalar>;
   using ProxType = TProx<Scalar, Scalar>;
@@ -24,6 +55,7 @@ void bind_sto_solver_base(py::module_ &m, const char *name) {
            py::return_value_policy::reference_internal)
       .def("set_prox", &SolverType::set_prox, py::arg("prox"),
            py::return_value_policy::reference_internal)
+      .def("reset", &SolverType::reset)
       .def("solve", &SolverType::solve, py::arg("n_epochs") = 1)
       .def("get_minimizer",
            [](SolverType &self, Array<Scalar> &out) { self.get_minimizer(out); },
@@ -239,4 +271,25 @@ PYBIND11_MODULE(solver, m) {
       m, "AtomicSAGADouble");
   bind_atomic_saga_like<AtomicSAGAFloat, TStoSolver<float, float>, float>(
       m, "AtomicSAGAFloat");
+
+  m.def(
+      "multi_solve_svrg_double",
+      [](const py::iterable &solver_objects, size_t epochs,
+         py::object threads_object, py::object starters_object) {
+        multi_solve_svrg_impl<SVRGDouble, double>(solver_objects, epochs,
+                                                  threads_object,
+                                                  starters_object);
+      },
+      py::arg("solver_objects"), py::arg("epochs"),
+      py::arg("threads") = py::none(), py::arg("starters") = py::none());
+  m.def(
+      "multi_solve_svrg_float",
+      [](const py::iterable &solver_objects, size_t epochs,
+         py::object threads_object, py::object starters_object) {
+        multi_solve_svrg_impl<SVRGFloat, float>(solver_objects, epochs,
+                                                threads_object,
+                                                starters_object);
+      },
+      py::arg("solver_objects"), py::arg("epochs"),
+      py::arg("threads") = py::none(), py::arg("starters") = py::none());
 }

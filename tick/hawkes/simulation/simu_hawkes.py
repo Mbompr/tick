@@ -112,6 +112,7 @@ class SimuHawkes(SimuPointProcess):
         SimuPointProcess.__init__(self, end_time=end_time, max_jumps=max_jumps,
                                   seed=seed, verbose=verbose)
 
+        object.__setattr__(self, "_restored_simulation_time", None)
         self.force_simulation = force_simulation
         # We keep a reference on this kernel to avoid copies
         self._kernel_0 = HawkesKernel0()
@@ -251,8 +252,17 @@ class SimuHawkes(SimuPointProcess):
         """
         return self._pp.get_baseline(i, t_values)
 
+    @property
+    def simulation_time(self):
+        restored_simulation_time = self.__dict__.get(
+            "_restored_simulation_time")
+        if restored_simulation_time is not None:
+            return restored_simulation_time
+        return SimuPointProcess.simulation_time.fget(self)
+
     def _rebuild_point_process(self):
-        self._kernel_0 = HawkesKernel0()
+        # Rebuilding after pickle/multiprocessing must bypass readonly guards
+        self._set("_kernel_0", HawkesKernel0())
 
         n_nodes = None
         if getattr(self, "baseline", None) is not None:
@@ -260,7 +270,7 @@ class SimuHawkes(SimuPointProcess):
         elif getattr(self, "kernels", None) is not None:
             n_nodes = self.kernels.shape[0]
 
-        self._pp = _Hawkes(n_nodes, self._pp_init_seed)
+        self._set("_pp", _Hawkes(n_nodes, self._pp_init_seed))
 
         if getattr(self, "kernels", None) is not None:
             self._init_kernels()
@@ -303,7 +313,17 @@ class SimuHawkes(SimuPointProcess):
             self.track_intensity(intensity_track_step)
 
         if simulation_time > 0 and timestamps is not None:
-            self.set_timestamps(timestamps, end_time=simulation_time)
+            restored_end_time = simulation_time
+            # Preserve the configured simulation horizon when we were run with
+            # an explicit end_time and no max_jumps cap.
+            if getattr(self, "end_time", None) is not None and \
+                    getattr(self, "max_jumps", None) is None:
+                restored_end_time = self.end_time
+            self.set_timestamps(timestamps, end_time=restored_end_time)
+            object.__setattr__(self, "_restored_simulation_time",
+                               simulation_time)
+        else:
+            object.__setattr__(self, "_restored_simulation_time", None)
 
     def __deepcopy__(self, memo):
         if self.__class__ is not SimuHawkes:
@@ -341,12 +361,28 @@ class SimuHawkes(SimuPointProcess):
         if self.simulation_time > 0:
             cloned.set_timestamps(copy.deepcopy(self.timestamps, memo),
                                   end_time=self.simulation_time)
+        restored_simulation_time = self.__dict__.get(
+            "_restored_simulation_time")
+        if restored_simulation_time is not None:
+            object.__setattr__(cloned, "_restored_simulation_time",
+                               restored_simulation_time)
 
         return cloned
+
+    def reset(self):
+        object.__setattr__(self, "_restored_simulation_time", None)
+        super().reset()
 
     def _simulate(self):
         """Launch simulation of the Hawkes process by thinning
         """
+        restored_simulation_time = self.__dict__.get(
+            "_restored_simulation_time")
+        if restored_simulation_time is not None:
+            if self.end_time is not None and \
+                    self.end_time == restored_simulation_time:
+                return
+            object.__setattr__(self, "_restored_simulation_time", None)
         if self.baseline.dtype == float and np.linalg.norm(self.baseline) == 0:
             warnings.warn("Baselines have not been set, hence this hawkes "
                           "process won't jump")
