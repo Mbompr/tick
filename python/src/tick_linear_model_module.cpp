@@ -5,6 +5,7 @@
 #include "tick/base_model/model_lipschitz.h"
 #include "tick/linear_model/model_linreg.h"
 #include "tick/linear_model/model_logreg.h"
+#include "tick/linear_model/model_poisreg.h"
 
 namespace py = pybind11;
 
@@ -34,12 +35,29 @@ void bind_sigmoid(py::class_<TModelLogReg<Scalar, Scalar>,
       py::arg("x"), py::arg("out"));
 }
 
+template <typename ModelType, typename BaseGeneralizedLinear, typename Array2dPtr,
+          typename ArrayPtr>
+void bind_model_poisreg(py::module_ &m, const char *name) {
+  py::class_<ModelType, std::shared_ptr<ModelType>, BaseGeneralizedLinear>(
+      m, name)
+      .def(py::init<Array2dPtr, ArrayPtr, LinkType, bool, int>(),
+           py::arg("features"), py::arg("labels"), py::arg("link_type"),
+           py::arg("fit_intercept"), py::arg("n_threads") = 1)
+      .def("get_link_type", &ModelType::get_link_type)
+      .def("set_link_type", &ModelType::set_link_type);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(linear_model, m) {
   tick::pybind::ensure_numpy_imported();
 
   m.doc() = "tick.linear_model pybind11 bindings";
+
+  py::enum_<LinkType>(m, "LinkType")
+      .value("LinkType_identity", LinkType::identity)
+      .value("LinkType_exponential", LinkType::exponential)
+      .export_values();
 
   bind_model_glm<ModelLinRegDouble, ModelGeneralizedLinearDouble,
                  ModelLipschitzDouble, SBaseArrayDouble2dPtr, SArrayDoublePtr,
@@ -67,4 +85,11 @@ PYBIND11_MODULE(linear_model, m) {
            py::arg("features"), py::arg("labels"),
            py::arg("fit_intercept"), py::arg("n_threads") = 1);
   bind_sigmoid<float>(logreg_float);
+
+  bind_model_poisreg<ModelPoisRegDouble, ModelGeneralizedLinearDouble,
+                     SBaseArrayDouble2dPtr, SArrayDoublePtr>(
+      m, "ModelPoisRegDouble");
+  bind_model_poisreg<ModelPoisRegFloat, ModelGeneralizedLinearFloat,
+                     SBaseArrayFloat2dPtr, SArrayFloatPtr>(
+      m, "ModelPoisRegFloat");
 }

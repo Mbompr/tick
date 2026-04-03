@@ -11,25 +11,40 @@ from .simu_logreg import SimuLogReg
 
 try:
     from .linear_regression import LinearRegression
-    from .logistic_regression import LogisticRegression
-    from .poisson_regression import PoissonRegression
 except ImportError:
     LinearRegression = None
+
+try:
+    from .logistic_regression import LogisticRegression
+except ImportError:
     LogisticRegression = None
+
+try:
+    from .poisson_regression import PoissonRegression
+except ImportError:
     PoissonRegression = None
 
 try:
-    from .model_hinge import ModelHinge
-    from .model_smoothed_hinge import ModelSmoothedHinge
-    from .model_quadratic_hinge import ModelQuadraticHinge
     from .model_poisreg import ModelPoisReg
     from .simu_poisreg import SimuPoisReg
 except ImportError:
-    ModelHinge = None
-    ModelSmoothedHinge = None
-    ModelQuadraticHinge = None
     ModelPoisReg = None
     SimuPoisReg = None
+
+try:
+    from .model_hinge import ModelHinge
+except ImportError:
+    ModelHinge = None
+
+try:
+    from .model_smoothed_hinge import ModelSmoothedHinge
+except ImportError:
+    ModelSmoothedHinge = None
+
+try:
+    from .model_quadratic_hinge import ModelQuadraticHinge
+except ImportError:
+    ModelQuadraticHinge = None
 
 __all__ = [
     'LinearRegression', 'LogisticRegression', 'LogisticRegression',
