@@ -529,7 +529,8 @@ class Test(unittest.TestCase):
             def fake_module_from_spec(spec):
                 return types.SimpleNamespace()
 
-            with mock.patch.object(opsys.importlib, "import_module",
+            with mock.patch.dict(sys.modules, {}, clear=False), \
+                 mock.patch.object(opsys.importlib, "import_module",
                                    side_effect=ModuleNotFoundError(
                                        "missing",
                                        name="tick.base.build.base")), \
