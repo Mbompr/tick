@@ -2,42 +2,17 @@
 
 """Import shim for :mod:`tick.hawkes.inference.build`."""
 
-from importlib import import_module, machinery, util
-from pathlib import Path
-import sys
-
-from tick.base.opsys import add_to_path_if_windows
+from tick.base.opsys import add_to_path_if_windows, load_extension, \
+    resolve_repo_root
 
 add_to_path_if_windows(__file__)
+_REPO_ROOT = resolve_repo_root(__file__, levels_up=3)
 
 
 def _load_hawkes_inference_module():
-    module_name = __name__ + ".hawkes_inference"
-    try:
-        return import_module(".hawkes_inference", __name__)
-    except ModuleNotFoundError as exc:
-        if exc.name not in {module_name, "hawkes_inference"}:
-            raise
-        package_dir = Path(__file__).resolve().parent
-        repo_root = package_dir.parents[3]
-        suffixes = tuple(machinery.EXTENSION_SUFFIXES)
-
-        for build_root in (repo_root / "_skbuild", repo_root / "build", repo_root):
-            if build_root != repo_root and not build_root.exists():
-                continue
-            for suffix in suffixes:
-                for candidate in sorted(
-                        build_root.rglob(f"hawkes_inference*{suffix}")):
-                    if candidate.name[len("hawkes_inference"):] not in suffixes:
-                        continue
-                    spec = util.spec_from_file_location(module_name, candidate)
-                    if spec is None or spec.loader is None:
-                        continue
-                    module = util.module_from_spec(spec)
-                    sys.modules[module_name] = module
-                    spec.loader.exec_module(module)
-                    return module
-        raise exc
+    return load_extension("hawkes_inference", __name__, __file__,
+                          repo_root=_REPO_ROOT,
+                          search_roots=("_skbuild", "build", None))
 
 
 _hawkes_inference = _load_hawkes_inference_module()

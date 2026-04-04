@@ -496,14 +496,14 @@ class Test(unittest.TestCase):
         self.assertEqual(a02.kwarg0, '13')
 
     def test_build_loader_prefers_matching_extension_suffix(self):
-        from tick.base import build as base_build
+        from tick.base import opsys
 
-        active_suffix = max(base_build.importlib.machinery.EXTENSION_SUFFIXES,
+        active_suffix = max(opsys.importlib.machinery.EXTENSION_SUFFIXES,
                             key=len)
         wrong_suffix = ".cpython-bad.so"
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            repo_root = Path(tmpdir) / "repo"
+            repo_root = (Path(tmpdir) / "repo").resolve()
             package_dir = repo_root / "tick" / "base" / "build"
             wrong = repo_root / "_skbuild" / "abi" / "tick" / "base" / "build" / (
                 f"base{wrong_suffix}"
@@ -529,31 +529,33 @@ class Test(unittest.TestCase):
             def fake_module_from_spec(spec):
                 return types.SimpleNamespace()
 
-            with mock.patch.object(base_build, "__file__",
-                                   str(package_dir / "__init__.py")), \
-                 mock.patch.object(base_build.importlib, "import_module",
+            with mock.patch.object(opsys.importlib, "import_module",
                                    side_effect=ModuleNotFoundError(
-                                       "missing", name="base")), \
-                 mock.patch.object(base_build.importlib.util,
+                                       "missing",
+                                       name="tick.base.build.base")), \
+                 mock.patch.object(opsys.importlib.util,
                                    "spec_from_file_location",
                                    side_effect=fake_spec_from_file_location), \
-                 mock.patch.object(base_build.importlib.util,
+                 mock.patch.object(opsys.importlib.util,
                                    "module_from_spec",
                                    side_effect=fake_module_from_spec):
-                module = base_build._load_extension("base")
+                module = opsys.load_extension("base", "tick.base.build",
+                                              str(package_dir / "__init__.py"),
+                                              repo_root=repo_root)
 
             self.assertEqual([path.resolve() for path in chosen],
                              [right.resolve()])
             self.assertEqual(module.marker, "loaded")
 
     def test_build_loader_does_not_swallow_other_missing_modules(self):
-        from tick.base import build as base_build
+        from tick.base import opsys
 
-        with mock.patch.object(base_build.importlib, "import_module",
+        with mock.patch.object(opsys.importlib, "import_module",
                                side_effect=ModuleNotFoundError(
                                    "missing dependency", name="numpy")):
             with self.assertRaises(ModuleNotFoundError) as ctx:
-                base_build._load_extension("base")
+                opsys.load_extension("base", "tick.base.build", __file__,
+                                     repo_root=Path(__file__).resolve())
 
         self.assertEqual(ctx.exception.name, "numpy")
 
