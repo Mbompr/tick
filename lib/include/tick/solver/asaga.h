@@ -29,6 +29,7 @@ class DLL_PUBLIC AtomicSAGA : public TBaseSAGA<T, T> {
   using TBaseSAGA<T, T>::save_history;
   using TBaseSAGA<T, T>::last_record_epoch;
   using TBaseSAGA<T, T>::last_record_time;
+  using TBaseSAGA<T, T>::objectives;
 
  public:
   using TBaseSAGA<T, T>::set_starting_iterate;

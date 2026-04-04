@@ -91,6 +91,35 @@ class ASAGATest(object):
                                              decimal=4)
         self.assertGreater(np.linalg.norm(saga.solution[:-1]), 0)
 
+    def test_asaga_records_history(self):
+        seed = 1398
+        np.random.seed(seed)
+        n_samples = 4000
+        n_features = 30
+        weights = weights_sparse_gauss(n_features, nnz=3).astype(self.dtype)
+        intercept = 0.2
+        sparsity = 1e-4
+        features = sparse.rand(n_samples, n_features, density=sparsity,
+                               format='csr', random_state=8).astype(self.dtype)
+
+        simulator = SimuLogReg(weights, n_samples=n_samples, features=features,
+                               verbose=False, intercept=intercept,
+                               dtype=self.dtype)
+        features, labels = simulator.simulate()
+
+        model = ModelLogReg(fit_intercept=True)
+        model.fit(features, labels)
+        prox = ProxElasticNet(1e-3, ratio=0.1, range=(0, n_features))
+        solver_step = 1. / model.get_lip_max()
+        asaga = SAGA(step=solver_step, max_iter=10, tol=0, verbose=False,
+                     n_threads=2, record_every=3, seed=seed)
+        asaga.set_model(model).set_prox(prox)
+        asaga.solve()
+
+        self.assertIn("obj", asaga.history.values)
+        self.assertIn("time", asaga.history.values)
+        self.assertGreater(len(asaga.history.values["obj"]), 0)
+
 
 class SAGATestFloat32(TestSolver, SAGATest):
     def __init__(self, *args, **kwargs):

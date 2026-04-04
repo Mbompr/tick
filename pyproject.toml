@@ -54,6 +54,8 @@ plot = [
 docs = [
   "numpydoc>=1.8",
   "sphinx>=8.0",
+  "matplotlib>=3.8",
+  "sphinx-bootstrap-theme>=0.8",
 ]
 dev = [
   "pytest>=8.3",

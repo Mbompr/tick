@@ -434,16 +434,18 @@ double TimeFunction::linear_interpolation(double t_left, double y_left, double t
 
 double TimeFunction::interpolation(double t_left, double y_left, double t_right, double y_right,
                                    double t) {
-  if ((t < t_left) || (t > t_right)) {
+  if ((t < t_left - FLOOR_THRESHOLD) || (t > t_right + FLOOR_THRESHOLD)) {
     std::cout << "TimeFunction::interpolation Error: evaluation points error " << std::endl
               << "t_left: " << t_left << std::endl
               << "t: " << t << std::endl
               << "t_right: " << t_right << std::endl;
   }
-  if (t < t_left)
+  if (t < t_left - FLOOR_THRESHOLD)
     throw std::runtime_error("TimeFunction::interpolation error: t_left  cannot be larger than t");
-  if (t > t_right)
+  if (t > t_right + FLOOR_THRESHOLD)
     throw std::runtime_error("TimeFunction::interpolation error: t_right cannot be smaller than t");
+  if (std::abs(t - t_left) < FLOOR_THRESHOLD) t = t_left;
+  if (std::abs(t - t_right) < FLOOR_THRESHOLD) t = t_right;
   // Second do the right interpolation
   switch (inter_mode) {
     case (InterMode::InterLinear):

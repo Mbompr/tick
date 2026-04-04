@@ -216,10 +216,7 @@ html_show_copyright = True
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'tickdoc'
 
-# Add this context to all produce html files
-html_context = {
-    'css_files': ['_static/css/custom.css'],
-}
+html_css_files = ['css/custom.css']
 
 googleanalytics_id = 'UA-97947441-1'
 

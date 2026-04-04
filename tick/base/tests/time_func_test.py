@@ -185,6 +185,24 @@ class Test(unittest.TestCase):
             decimal=3,
         )
 
+    def test_interpolation_on_sampled_grid_boundary(self):
+        t_values = np.arange(135, dtype=float) / 5
+        y_values = np.maximum(
+            15 * np.sin(t_values) /
+            (np.sqrt(t_values + 1) + 0.1 * t_values),
+            0.001,
+        )
+
+        tf = TimeFunction([t_values, y_values], dt=0.01)
+        eval_times = np.array([0.7, 0.71, 1.4])
+
+        np.testing.assert_allclose(
+            tf.value(eval_times),
+            np.interp(eval_times, t_values, y_values),
+            rtol=1e-12,
+            atol=1e-12,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
