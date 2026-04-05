@@ -15,6 +15,7 @@ jobs:
   build:
     name: Python ${{ matrix.python-version }}
     runs-on: windows-2022
+    timeout-minutes: 90
 
     strategy:
       fail-fast: false
@@ -40,11 +41,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install .[dev,plot]
+        python -m pip install pytest-timeout
 
     - name: build
       run: |
         python -m build --wheel
 
     - name: pytest
+      env:
+        PYTHONFAULTHANDLER: 1
       run: |
-        python -m pytest -q
+        python -m pytest -q --durations=50 --timeout=600

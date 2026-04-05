@@ -15,6 +15,7 @@ jobs:
   build:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     strategy:
       fail-fast: false
@@ -40,11 +41,14 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install .[dev,plot]
+        python3 -m pip install pytest-timeout
 
     - name: build
       run: |
         python3 -m build --wheel
 
     - name: pytest
+      env:
+        PYTHONFAULTHANDLER: 1
       run: |
-        python3 -m pytest -q
+        python3 -m pytest -q --durations=50 --timeout=600
