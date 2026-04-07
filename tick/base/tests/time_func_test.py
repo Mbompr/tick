@@ -212,6 +212,21 @@ class Test(unittest.TestCase):
         self.assertTrue(np.isfinite(tf._max_error(t_values[-1])))
         self.assertAlmostEqual(tf.value(t_values[-1]), y_values[-1])
 
+    def test_max_error_on_last_partial_interval(self):
+        t_values = np.array([
+            0.56434192, 1.63840898, 2.16056289, 3.07431589, 3.88399287
+        ])
+        y_values = np.arange(t_values.size, dtype=float)
+        eval_t = 3.816757114962886
+
+        tf = TimeFunction([t_values, y_values], inter_mode=TimeFunction.InterLinear)
+
+        true_value = np.interp(eval_t, t_values, y_values)
+        error = abs(true_value - tf.value(eval_t))
+
+        self.assertGreater(tf._max_error(eval_t), 0)
+        self.assertLess(error, tf._max_error(eval_t))
+
 
 if __name__ == "__main__":
     unittest.main()

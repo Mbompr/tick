@@ -354,8 +354,20 @@ SArrayDoublePtr TimeFunction::future_bound(ArrayDouble &array) {
 
 double TimeFunction::max_error(double t) {
   const ulong sample_size = sampled_y->size();
-  const ulong i_left = std::min(get_index_(t), sample_size - 1);
-  const ulong i_right = std::min(i_left + 1, sample_size - 1);
+  if (sample_size < 2) {
+    return 0;
+  }
+
+  ulong i_left = _idx_left(t);
+  ulong i_right = _idx_right(t);
+
+  if (i_right >= sample_size) {
+    i_right = sample_size - 1;
+    i_left = sample_size - 2;
+  } else if (i_left >= sample_size - 1) {
+    i_left = sample_size - 2;
+    i_right = sample_size - 1;
+  }
 
   const double t_left = get_t_from_index_(i_left);
   const double y_left = (*sampled_y)[i_left];
