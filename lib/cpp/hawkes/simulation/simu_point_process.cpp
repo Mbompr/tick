@@ -229,8 +229,12 @@ void PP::set_timestamps(VArrayDoublePtrList1D &timestamps, double end_time) {
       }
     }
 
-    // Exit before recording end_time as a jump
-    if (next_jump_time == end_time) break;
+    // Advance the process clock to the requested horizon without recording
+    // end_time as a jump.
+    if (next_jump_time == end_time) {
+      update_time_shift(end_time - time, false, true);
+      break;
+    }
 
     update_time_shift(next_jump_time - time, true, true);
     update_jump(next_jump_node);

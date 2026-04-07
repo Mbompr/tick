@@ -3,6 +3,10 @@
 # -*- coding: utf8 -*-
 import sys
 import unittest
+import tempfile
+import types
+from pathlib import Path
+from unittest import mock
 
 from tick.base import Base
 from tick.base.build.base import A0 as _A0
@@ -473,7 +477,7 @@ class Test(unittest.TestCase):
             self.a0.readonly_prop = x
 
         msg = "can't set attribute"
-        if sys.version_info[1] == 11:
+        if sys.version_info >= (3, 11):
             msg = "property 'readonly_prop' of 'A0' object has no setter"
         self.assertRaisesRegex(AttributeError, msg, frop, 45)
 
@@ -490,6 +494,71 @@ class Test(unittest.TestCase):
         self.assertEqual(a02.arg0, 11)
         self.assertEqual(a02.y0, 12)
         self.assertEqual(a02.kwarg0, '13')
+
+    def test_build_loader_prefers_matching_extension_suffix(self):
+        from tick.base import opsys
+
+        active_suffix = max(opsys.importlib.machinery.EXTENSION_SUFFIXES,
+                            key=len)
+        wrong_suffix = ".cpython-bad.so"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = (Path(tmpdir) / "repo").resolve()
+            package_dir = repo_root / "tick" / "base" / "build"
+            wrong = repo_root / "_skbuild" / "abi" / "tick" / "base" / "build" / (
+                f"base{wrong_suffix}"
+            )
+            right = repo_root / "_skbuild" / "abi" / "tick" / "base" / "build" / (
+                f"base{active_suffix}"
+            )
+            wrong.parent.mkdir(parents=True, exist_ok=True)
+            right.parent.mkdir(parents=True, exist_ok=True)
+            wrong.write_text("wrong")
+            right.write_text("right")
+
+            chosen = []
+
+            class Loader:
+                def exec_module(self, module):
+                    module.marker = "loaded"
+
+            def fake_spec_from_file_location(name, candidate):
+                chosen.append(candidate)
+                return types.SimpleNamespace(loader=Loader())
+
+            def fake_module_from_spec(spec):
+                return types.SimpleNamespace()
+
+            with mock.patch.dict(sys.modules, {}, clear=False), \
+                 mock.patch.object(opsys.importlib, "import_module",
+                                   side_effect=ModuleNotFoundError(
+                                       "missing",
+                                       name="tick.base.build.base")), \
+                 mock.patch.object(opsys.importlib.util,
+                                   "spec_from_file_location",
+                                   side_effect=fake_spec_from_file_location), \
+                 mock.patch.object(opsys.importlib.util,
+                                   "module_from_spec",
+                                   side_effect=fake_module_from_spec):
+                module = opsys.load_extension("base", "tick.base.build",
+                                              str(package_dir / "__init__.py"),
+                                              repo_root=repo_root)
+
+            self.assertEqual([path.resolve() for path in chosen],
+                             [right.resolve()])
+            self.assertEqual(module.marker, "loaded")
+
+    def test_build_loader_does_not_swallow_other_missing_modules(self):
+        from tick.base import opsys
+
+        with mock.patch.object(opsys.importlib, "import_module",
+                               side_effect=ModuleNotFoundError(
+                                   "missing dependency", name="numpy")):
+            with self.assertRaises(ModuleNotFoundError) as ctx:
+                opsys.load_extension("base", "tick.base.build", __file__,
+                                     repo_root=Path(__file__).resolve())
+
+        self.assertEqual(ctx.exception.name, "numpy")
 
 
 if __name__ == "__main__":

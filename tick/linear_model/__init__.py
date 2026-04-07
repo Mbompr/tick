@@ -3,20 +3,48 @@
 import tick.base
 import tick.base_model.build.base_model
 
-from .linear_regression import LinearRegression
-from .logistic_regression import LogisticRegression
-from .poisson_regression import PoissonRegression
-
 from .model_linreg import ModelLinReg
 from .model_logreg import ModelLogReg
-from .model_hinge import ModelHinge
-from .model_smoothed_hinge import ModelSmoothedHinge
-from .model_quadratic_hinge import ModelQuadraticHinge
-from .model_poisreg import ModelPoisReg
 
 from .simu_linreg import SimuLinReg
 from .simu_logreg import SimuLogReg
-from .simu_poisreg import SimuPoisReg
+
+try:
+    from .linear_regression import LinearRegression
+except ImportError:
+    LinearRegression = None
+
+try:
+    from .logistic_regression import LogisticRegression
+except ImportError:
+    LogisticRegression = None
+
+try:
+    from .poisson_regression import PoissonRegression
+except ImportError:
+    PoissonRegression = None
+
+try:
+    from .model_poisreg import ModelPoisReg
+    from .simu_poisreg import SimuPoisReg
+except ImportError:
+    ModelPoisReg = None
+    SimuPoisReg = None
+
+try:
+    from .model_hinge import ModelHinge
+except ImportError:
+    ModelHinge = None
+
+try:
+    from .model_smoothed_hinge import ModelSmoothedHinge
+except ImportError:
+    ModelSmoothedHinge = None
+
+try:
+    from .model_quadratic_hinge import ModelQuadraticHinge
+except ImportError:
+    ModelQuadraticHinge = None
 
 __all__ = [
     'LinearRegression', 'LogisticRegression', 'LogisticRegression',

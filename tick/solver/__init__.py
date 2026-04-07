@@ -2,7 +2,11 @@
 
 import tick.base
 import tick.linear_model.build.linear_model
-import tick.robust.build.robust
+
+try:
+    import tick.robust.build.robust
+except ImportError:
+    pass
 
 from .gd import GD
 from .agd import AGD
@@ -10,10 +14,17 @@ from .bfgs import BFGS
 from .scpg import SCPG
 from .sgd import SGD
 from .svrg import SVRG
-from .saga import SAGA
+# Keep imports resilient while the pybind11 migration is in progress.
+try:
+    from .saga import SAGA
+except ImportError:
+    SAGA = None
 from .sdca import SDCA
 from .gfb import GFB
-from .adagrad import AdaGrad
+try:
+    from .adagrad import AdaGrad
+except ImportError:
+    AdaGrad = None
 from .history import History
 
 __all__ = [
