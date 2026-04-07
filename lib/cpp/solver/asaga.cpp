@@ -96,6 +96,7 @@ void AtomicSAGA<T>::threaded_solve(int n_epochs, size_t n_thread) {
         double time = ((end - start).count()) * std::chrono::steady_clock::period::num /
             static_cast<double>(std::chrono::steady_clock::period::den);
         save_history(last_record_time + time, last_record_epoch + epoch);
+        objectives.emplace_back(model->loss(iterate) + prox->value(iterate));
       }
     }
   }

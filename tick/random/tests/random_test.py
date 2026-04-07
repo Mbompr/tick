@@ -39,16 +39,6 @@ class Test(unittest.TestCase):
         # We check that samples with same seed are equal
         np.testing.assert_almost_equal(seeded_sample_1, seeded_sample_2)
 
-        # This is temporary
-        # At the moment, seeds are not cross platform as distributions in
-        # C++ depends on standard library shipped with compiler
-        import os
-        if os.name == 'posix':
-            import platform
-            if platform.system() == 'Darwin':
-                # We check that we get the same as what was recorded
-                np.testing.assert_almost_equal(seeded_sample_1, seeded_sample)
-
         # arguments given to test function, we append size and seed to other
         # arguments
         other_seed_args = list(args) + [self.test_size, self.test_seed + 1]

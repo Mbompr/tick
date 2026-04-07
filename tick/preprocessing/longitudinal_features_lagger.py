@@ -136,8 +136,13 @@ class LongitudinalFeaturesLagger(LongitudinalPreprocessor):
         self._set("_n_init_features", n_init_features)
         self._set("_n_intervals", n_intervals)
         self._set("_n_output_features", int((self.n_lags + 1).sum()))
+        if sps.issparse(features[0]):
+            constructor_features = [x.toarray() for x in features]
+        else:
+            constructor_features = features
         self._set("_cpp_preprocessor",
-                  _LongitudinalFeaturesLagger(features, self.n_lags))
+                  _LongitudinalFeaturesLagger(constructor_features,
+                                              self.n_lags))
         self._set("_fitted", True)
 
         return self

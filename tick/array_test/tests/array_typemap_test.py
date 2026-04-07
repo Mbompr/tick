@@ -738,7 +738,7 @@ class Test(unittest.TestCase):
                 extract_function(np.zeros((5, 5, 5)))
 
     def test_array_2d_type_error(self):
-        """...Test array2d interfacing between SWIG and Python
+        """...Test array2d interfacing between native extensions and Python
         """
         for array_type, info in self.correspondence_dict.items():
             extract_function = info['typemap_in_array_2d_not_ol']

@@ -8,9 +8,14 @@ from abc import ABCMeta
 import json
 import pydoc
 import numpy as np
-import numpydoc as nd
-from numpydoc import docscrape
 import copy
+
+try:
+    from numpydoc import docscrape
+except ModuleNotFoundError as exc:
+    if exc.name != 'numpydoc':
+        raise
+    docscrape = None
 
 # The metaclass inherits from ABCMeta and not type, since we'd like to
 # do abstract classes in tick that inherits from ABC
@@ -255,7 +260,7 @@ class BaseMeta(ABCMeta):
         documented and their documentation
         """
         # If a class is not documented we return an empty list
-        if '__doc__' not in attrs:
+        if '__doc__' not in attrs or docscrape is None:
             return []
 
         current_class_doc = inspect.cleandoc(attrs['__doc__'])
@@ -558,6 +563,62 @@ class Base(metaclass=BaseMeta):
             Size of the increase
         """
         self._set(key, getattr(self, key) + step)
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        cpp_obj_name = getattr(self, "_cpp_obj_name", None)
+        if cpp_obj_name is not None:
+            state.pop(BaseMeta.hidden_attr(cpp_obj_name), None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        cpp_obj_name = getattr(self, "_cpp_obj_name", None)
+        if cpp_obj_name is None:
+            return
+
+        if cpp_obj_name == "_model":
+            features = getattr(self, "features", None)
+            labels = getattr(self, "labels", None)
+            times = getattr(self, "times", None)
+            censoring = getattr(self, "censoring", None)
+            dtype = getattr(self, "dtype", None)
+            if features is not None and labels is not None and hasattr(
+                    self, "fit"):
+                if censoring is not None:
+                    self.fit(features, labels, censoring)
+                else:
+                    self.fit(features, labels)
+            elif features is not None and times is not None and censoring is not None and hasattr(
+                    self, "fit"):
+                self.fit(features, times, censoring)
+            elif dtype is not None and hasattr(self, "_build_cpp_model"):
+                try:
+                    self._set("_model", self._build_cpp_model(dtype))
+                    data = getattr(self, "data", None)
+                    if data is not None and hasattr(self, "_set_data"):
+                        self._set_data(data)
+                except TypeError:
+                    # Some model copies used by astype()/deepcopy temporarily
+                    # clear features and labels, and their native model cannot
+                    # be rebuilt until data is reattached.
+                    self._set("_model", None)
+        elif cpp_obj_name == "_prox":
+            dtype = getattr(self, "dtype", None)
+            if dtype is not None and hasattr(self, "_build_cpp_prox"):
+                self._set("_prox", self._build_cpp_prox(dtype))
+        elif cpp_obj_name == "_solver":
+            dtype = getattr(self, "dtype", None)
+            model = getattr(self, "model", None)
+            prox = getattr(self, "prox", None)
+            target_dtype = dtype or getattr(model, "dtype", None) or "float64"
+            if hasattr(self, "_set_cpp_solver"):
+                self._set_cpp_solver(target_dtype)
+                if model is not None:
+                    self.set_model(model)
+                if prox is not None:
+                    self.set_prox(prox)
 
     def __str__(self):
         dic = self._as_dict()

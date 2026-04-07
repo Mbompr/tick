@@ -1,7 +1,7 @@
 # License: BSD 3 clause
 
 import numpy as np
-from scipy.sparse import sputils, csr_matrix
+from scipy.sparse import csr_matrix
 
 from tick.base_model import N_CALLS_LOSS, PASS_OVER_DATA
 from tick.base_model.model_first_order import ModelFirstOrder
@@ -154,7 +154,7 @@ class ModelHawkes(ModelFirstOrder):
             raise ValueError("call ``fit`` before using ``hessian``")
 
         # What kind of integers does scipy use fr sparse indices?
-        sparse_dtype = sputils.get_index_dtype()
+        sparse_dtype = np.int32
 
         n_baselines = self.n_nodes
         # number of alphas per dimension
