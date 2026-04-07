@@ -3,6 +3,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 import unittest
+from unittest import mock
 from tick.preprocessing import LongitudinalFeaturesLagger
 
 
@@ -35,6 +36,13 @@ class Test(unittest.TestCase):
             .fit_transform(self.sparse_features, censoring=self.censoring)
         feat_prod = [f.todense() for f in feat_prod]
         np.testing.assert_equal(feat_prod, self.expected_output)
+
+    def test_sparse_fit_does_not_densify_inputs(self):
+        lagger = LongitudinalFeaturesLagger(n_lags=self.n_lags)
+        with mock.patch.object(csr_matrix, "toarray",
+                               side_effect=AssertionError(
+                                   "sparse inputs should stay sparse")):
+            lagger.fit(self.sparse_features)
 
 
 if __name__ == "__main__":

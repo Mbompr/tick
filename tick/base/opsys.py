@@ -39,7 +39,10 @@ def resolve_repo_root(package_file, *, levels_up=None, marker=None):
 
 def _iter_extension_candidates(module_name, package_dir, repo_root,
                                search_roots):
-    build_dir_parts = package_dir.relative_to(repo_root).parts
+    try:
+        build_dir_parts = package_dir.relative_to(repo_root).parts
+    except ValueError:
+        return
     extension_suffixes = tuple(importlib.machinery.EXTENSION_SUFFIXES)
 
     for search_root in search_roots:
@@ -61,28 +64,26 @@ def _iter_extension_candidates(module_name, package_dir, repo_root,
 
             yield candidate
 
-
 def load_extension(module_name, package_name, package_file, *, repo_root,
                    search_roots=("_skbuild", "build")):
     qualified_name = f"{package_name}.{module_name}"
     package_dir = Path(package_file).resolve().parent
+
+    for candidate in _iter_extension_candidates(module_name, package_dir,
+                                                repo_root, search_roots):
+        spec = importlib.util.spec_from_file_location(qualified_name,
+                                                      candidate)
+        if spec is None or spec.loader is None:
+            continue
+
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[qualified_name] = module
+        spec.loader.exec_module(module)
+        return module
 
     try:
         return importlib.import_module(f".{module_name}", package_name)
     except ModuleNotFoundError as exc:
         if exc.name not in {qualified_name, module_name}:
             raise
-
-        for candidate in _iter_extension_candidates(module_name, package_dir,
-                                                    repo_root, search_roots):
-            spec = importlib.util.spec_from_file_location(qualified_name,
-                                                          candidate)
-            if spec is None or spec.loader is None:
-                continue
-
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[qualified_name] = module
-            spec.loader.exec_module(module)
-            return module
-
         raise

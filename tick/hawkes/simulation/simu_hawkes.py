@@ -212,6 +212,9 @@ class SimuHawkes(SimuPointProcess):
         else:
             self.kernels[i, j] = kernel
             self._pp.set_kernel(i, j, kernel._kernel)
+        if self.__dict__.get("_restored_simulation_time") is not None:
+            self._pp.reset()
+            object.__setattr__(self, "_restored_simulation_time", None)
 
     def set_baseline(self, i, baseline):
         self.baseline[i] = baseline
@@ -233,6 +236,9 @@ class SimuHawkes(SimuPointProcess):
             self._pp.set_baseline(i, baseline._time_function)
         else:
             raise ValueError(error_msg)
+        if self.__dict__.get("_restored_simulation_time") is not None:
+            self._pp.reset()
+            object.__setattr__(self, "_restored_simulation_time", None)
 
     def get_baseline_values(self, i, t_values):
         """Outputs value of baseline depending on time

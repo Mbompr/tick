@@ -1,6 +1,7 @@
 # License: BSD 3 clause
 
 import unittest
+import warnings
 
 import numpy as np
 
@@ -180,6 +181,24 @@ class Test(unittest.TestCase):
         self.assertEqual(rebuilt.n_total_jumps, hawkes.n_total_jumps)
         for original, current in zip(original_timestamps, rebuilt.timestamps):
             np.testing.assert_array_equal(original, current)
+
+        hawkes = SimuHawkes(kernels=np.array([[HawkesKernel0()]]),
+                            baseline=np.array([1.5]), end_time=5,
+                            verbose=False, seed=123)
+        hawkes.simulate()
+
+        rebuilt = object.__new__(SimuHawkes)
+        rebuilt.__setstate__(hawkes.__getstate__())
+        rebuilt.set_baseline(0, 0.0)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            rebuilt.simulate()
+
+        self.assertEqual(rebuilt.n_total_jumps, 0)
+        self.assertEqual(rebuilt.simulation_time, hawkes.simulation_time)
+        np.testing.assert_array_equal(rebuilt.timestamps[0],
+                                      np.array([], dtype=float))
 
     def test_compensator(self):
         """...Test that compensators with time function kernels give residuals 
