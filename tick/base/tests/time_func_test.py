@@ -203,6 +203,15 @@ class Test(unittest.TestCase):
             atol=1e-12,
         )
 
+    def test_max_error_on_support_endpoint(self):
+        t_values = np.array([0., 1., 2., 3.])
+        y_values = np.array([0., 1., 0.5, 0.25])
+
+        tf = TimeFunction([t_values, y_values], dt=0.5)
+
+        self.assertTrue(np.isfinite(tf._max_error(t_values[-1])))
+        self.assertAlmostEqual(tf.value(t_values[-1]), y_values[-1])
+
 
 if __name__ == "__main__":
     unittest.main()

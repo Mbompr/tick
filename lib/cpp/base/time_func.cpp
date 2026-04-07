@@ -241,10 +241,11 @@ double TimeFunction::value(double t) {
     return 0.0;
   }
 
-  const ulong i_left = _idx_left(t);
-  const ulong i_right = _idx_right(t);
+  const ulong sample_size = sampled_y->size();
+  const ulong i_left = std::min(_idx_left(t), sample_size - 1);
+  const ulong i_right = std::min(_idx_right(t), sample_size - 1);
   const double t_left = _t_left(t);
-  const double t_right = _t_right(t);
+  const double t_right = get_t_from_index_(i_right);
   const double y_left = (*sampled_y)[i_left];
   const double y_right = (*sampled_y)[i_right];
   return interpolation(t_left, y_left, t_right, y_right, t);
@@ -332,10 +333,11 @@ double TimeFunction::future_bound(double t) {
     return (*future_max)[0];
   }
 
-  const ulong i_left = _idx_left(t);
-  const ulong i_right = _idx_right(t);
+  const ulong sample_size = future_max->size();
+  const ulong i_left = std::min(_idx_left(t), sample_size - 1);
+  const ulong i_right = std::min(_idx_right(t), sample_size - 1);
   const double t_left = _t_left(t);
-  const double t_right = _t_right(t);
+  const double t_right = get_t_from_index_(i_right);
   const double y_left = (*future_max)[i_left];
   const double y_right = (*future_max)[i_right];
 
@@ -351,12 +353,14 @@ SArrayDoublePtr TimeFunction::future_bound(ArrayDouble &array) {
 }
 
 double TimeFunction::max_error(double t) {
-  const ulong i_left = get_index_(t);
+  const ulong sample_size = sampled_y->size();
+  const ulong i_left = std::min(get_index_(t), sample_size - 1);
+  const ulong i_right = std::min(i_left + 1, sample_size - 1);
 
   const double t_left = get_t_from_index_(i_left);
   const double y_left = (*sampled_y)[i_left];
-  const double t_right = get_t_from_index_(i_left + 1);
-  const double y_right = (*sampled_y)[i_left + 1];
+  const double t_right = get_t_from_index_(i_right);
+  const double y_right = (*sampled_y)[i_right];
 
   switch (inter_mode) {
     case (InterMode::InterLinear):
